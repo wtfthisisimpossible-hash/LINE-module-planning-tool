@@ -264,6 +264,7 @@ td:not(:last-child), th:not(:last-child) { border-right: 1px solid #ddd; }
   display: block;
   pointer-events: none;
   user-select: none;
+  object-fit: fill;
 }
 .product-module.selected {
   outline: 2.5px solid #1a6fc4;
@@ -1241,7 +1242,12 @@ function renderModuleDOM(mod) {
   div.style.top = `${mod.y}px`;
 
   const imgEl = document.createElement('img');
-  const _svgBlob = new Blob([CUSTOM_SVG[mod.id] || ""], {type:"image/svg+xml"});
+  // 注入 preserveAspectRatio="none" 確保 SVG 在 iPad Safari 正確填滿容器
+  const _svgSrc = (CUSTOM_SVG[mod.id] || "").replace(/<svg([^>]*)>/, (m, attrs) => {
+    if (/preserveAspectRatio/.test(attrs)) return m;
+    return `<svg${attrs} preserveAspectRatio="none">`;
+  });
+  const _svgBlob = new Blob([_svgSrc], {type:"image/svg+xml"});
   imgEl.src = URL.createObjectURL(_svgBlob);
   div.appendChild(imgEl);
 
