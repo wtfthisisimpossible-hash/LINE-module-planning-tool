@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LINE牆櫃立面配置工具</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 14px; color: #1a1a1a; background: #f0ede8; }
+
+.app { display: flex; height: 100vh; border: 2px solid #888; overflow: hidden; }
+
+.panel {
+  width: 250px; min-width: 250px;
+  background: #f7f5f2;
+  border-right: 2px solid #888;
+  padding: 14px 12px;
+  display: flex; flex-direction: column; gap: 14px;
+  overflow-y: auto;
+}
+.panel-title {
+  font-size: 15px; font-weight: bold;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #888;
+}
+.section-title {
+  font-size: 11px; font-weight: bold;
+  color: #555; letter-spacing: 0.03em;
+  margin-bottom: 5px;
+}
+.section { display: flex; flex-direction: column; gap: 6px; }
+
+/* 客製化下拉選單樣式 */
+.custom-select {
+  position: relative;
+  width: 100%;
+}
+.custom-select-trigger {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1.5px solid #888;
+  border-radius: 5px;
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+.custom-select-trigger::after {
+  content: '▼';
+  font-size: 9px;
+  color: #666;
+  transition: transform 0.15s ease;
+}
+.custom-select.open .custom-select-trigger::after {
+  transform: rotate(180deg);
+}
+.custom-select-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1.5px solid #888;
+  border-radius: 5px;
+  margin-top: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.custom-select.open .custom-select-options {
+  display: block;
+}
+.custom-option {
+  padding: 6px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.1s ease;
+}
+.custom-option:hover {
+  background: #eef5fc;
+}
+.custom-option.selected {
+  background: #e1f0fe;
+  font-weight: bold;
+}
+.custom-option-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background: #fcfcfc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.custom-option-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.custom-option-name {
+  font-size: 12px;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Trigger 內的預覽內容 */
+.trigger-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.trigger-icon {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.trigger-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.btn {
+  padding: 7px 12px;
+  border: 1.5px solid #888;
+  border-radius: 5px;
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+.btn:hover { background: #eef5fc; border-color: #1a6fc4; color: #1a6fc4; }
+.btn:active { transform: scale(0.97); }
+.btn-row { display: flex; gap: 6px; }
+.btn-row .btn { flex: 1; }
+.btn-danger:hover { border-color: #c0392b; background: #fdf0ee; color: #c0392b; }
+
+.divider { border: none; border-top: 1.5px solid #bbb; }
+.hint { font-size: 11px; color: #777; line-height: 1.5; }
+
+.canvas-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.canvas-header {
+  padding: 10px 14px;
+  font-size: 13px; font-weight: bold;
+  color: #444;
+  border-bottom: 2px solid #888;
+  background: #f7f5f2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+
+/*畫布網格改變*/
+.canvas {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background-color: #fcfcfc;
+  background-image:
+    radial-gradient(circle, #a9a9a9 2px, transparent 2px),
+    radial-gradient(circle, #ccc 1.5px, transparent 1.5px);
+  background-size:
+    calc(100px * var(--zoom, 1)) calc(100px * var(--zoom, 1)),
+    calc(20px  * var(--zoom, 1)) calc(20px  * var(--zoom, 1));
+  background-position: 0 0, 0 0;
+  border-bottom: 2px solid #888;
+  touch-action: none; /* 阻止瀏覽器原生縮放/捲動，讓自訂手勢完整接管 */
+}
+
+/* 多選模式啟用時按鈕高亮 */
+.btn.multiselect-active {
+  border-color: #e67e22 !important;
+  color: #e67e22 !important;
+  background: #fff8f3;
+}
+
+.empty-hint {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #aaa; font-size: 13px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.list-area { background: #f7f5f2;min-height: 300px ;max-height: 400px; overflow-y: auto; }
+
+.list-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 12px;
+  border-bottom: 1.5px solid #888;
+  background: #eeebe6;
+  position: sticky; top: 0; z-index: 2;
+}
+.list-header span { font-size: 12px; font-weight: bold; color: #444; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+col.col-name   { width: 15%; }
+col.col-id     { width: 16%; }
+col.col-spec   { width: 14%; }
+col.col-qty    { width: 7%; }
+col.col-note   { width: 25%; }
+
+th {
+  background: #eeebe6;
+  color: #555;
+  font-weight: bold;
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1.5px solid #888;
+}
+td {
+  padding: 5px 8px;
+  border-bottom: 1px solid #ddd;
+  color: #1a1a1a;
+  vertical-align: middle;
+}
+tr:hover td { background: #eef5fc; }
+td:not(:last-child), th:not(:last-child) { border-right: 1px solid #ddd; }
+
+.note-cell textarea {
+  width: 100%; min-height: 30px;
+  border: 1px solid #ccc; border-radius: 3px;
+  background: #fff; color: #1a1a1a;
+  font-size: 12px; line-height: 1.4;
+  padding: 4px 6px; resize: vertical;
+  outline: none;
+}
+.note-cell textarea:focus { border-color: #1a6fc4; box-shadow: 0 0 0 2px #cde4f7; }
+
+
+/* 模塊元件 */
+.sofa-module {
+  position: absolute;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  box-sizing: border-box;
+}
+.sofa-module img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+.sofa-module.selected {
+  outline: 2.5px solid #1a6fc4;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px #fff, 0 4px 12px rgba(26,111,196,0.35);
+  border-radius: 3px;
+  z-index: 5;
+}
+.sofa-module:active { cursor: grabbing; }
+
+/* 框選矩形樣式 */
+#selection-rect {
+  position: absolute;
+  border: 2px dashed #1a6fc4;
+  background: rgba(26, 111, 196, 0.08);
+  pointer-events: none;
+  display: none;
+  z-index: 50;
+  box-sizing: border-box;
+}
+
+/* 畫布縮放容器：只有模塊在此層，框選/提示不受縮放影響 */
+#canvas-viewport {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  transform-origin: top left;
+}
+
+/* 多選高亮：覆蓋單選樣式 */
+.sofa-module.multi-selected::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 2.5px solid #e67e22;
+  border-radius: 4px;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px #fff, 0 4px 10px rgba(230,126,34,0.3);
+  z-index: 10;
+}
+
+/* 配置清單多選高亮行 */
+tr.multi-selected-row td {
+  background: #fff3e0 !important;
+}
+
+/* 吐司通知樣式 */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  z-index: 9999;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="panel">
+    <div class="panel-title">LINE牆櫃模塊工具</div>
+
+    <div class="section">
+      <div class="section-title">三層櫃（Three Tier）</div>
+      <div class="custom-select" id="three_tier-custom-select">
+        <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('three_tier')">
+          <div class="trigger-content" id="three_tier-trigger-content">
+            <span>選擇三層櫃模塊</span>
+          </div>
+        </div>
+        <div class="custom-select-options" id="three_tier-options-list"></div>
+      </div>
+      <select id="three_tier-select" style="display: none;"></select>
+      <button class="btn" onclick="insertModule('three_tier')">插入三層櫃模塊</button>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <div class="section-title">雙層櫃（Two Tier）</div>
+      <div class="custom-select" id="two_tier-custom-select">
+        <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('two_tier')">
+          <div class="trigger-content" id="two_tier-trigger-content">
+            <span>選擇雙層櫃模塊</span>
+          </div>
+        </div>
+        <div class="custom-select-options" id="two_tier-options-list"></div>
+      </div>
+      <select id="two_tier-select" style="display: none;"></select>
+      <button class="btn" onclick="insertModule('two_tier')">插入雙層櫃模塊</button>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <div class="section-title">置物櫃（Locker）</div>
+      <div class="custom-select" id="locker-custom-select">
+        <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('locker')">
+          <div class="trigger-content" id="locker-trigger-content">
+            <span>選擇置物櫃模塊</span>
+          </div>
+        </div>
+        <div class="custom-select-options" id="locker-options-list"></div>
+      </div>
+      <select id="locker-select" style="display: none;"></select>
+      <button class="btn" onclick="insertModule('locker')">插入置物櫃模塊</button>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <div class="section-title">其他配件（Other）</div>
+      <div class="custom-select" id="other-custom-select">
+        <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('other')">
+          <div class="trigger-content" id="other-trigger-content">
+            <span>選擇其他配件</span>
+          </div>
+        </div>
+        <div class="custom-select-options" id="other-options-list"></div>
+      </div>
+      <select id="other-select" style="display: none;"></select>
+      <button class="btn" onclick="insertModule('other')">插入其他配件</button>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <div class="section-title">複製選取模塊</div>
+      <button class="btn" onclick="duplicateSelected()" title="快捷鍵：Ctrl+D">⧉ 複製選取模塊</button>
+      <p class="hint">複製目前選取的模塊。快捷鍵：Ctrl+D</p>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <div class="section-title">多選模式（iPad）</div>
+      <button class="btn" id="multiselect-mode-btn" onclick="toggleMultiSelectMode()">☑ 多選模式：關閉</button>
+      <p class="hint">開啟後點擊模塊可累積加選；再次點擊已選取的模塊則取消。</p>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <button class="btn btn-danger" onclick="deleteSelected()">刪除選取模塊</button>
+      <button class="btn btn-danger" onclick="clearCanvas()">清空配置</button>
+    </div>
+
+  </div><!-- /.panel -->
+
+  <div class="canvas-area">
+    <div class="canvas-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span>LINE牆櫃 立面配置區</span>
+        <button class="btn" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-color: #3a8a3a; color: #3a8a3a;" onclick="saveProject()" title="將目前配置儲存為 .agora 專案檔">💾 儲存專案</button>
+        <label class="btn" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-color: #3a8a3a; color: #3a8a3a; cursor: pointer; margin: 0;" title="載入先前儲存的 .agora 專案檔">📂 載入專案<input type="file" id="loadProjectInput" accept=".agora" style="display:none;" onchange="loadProject(event)"></label>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; align-items:center; gap:4px;">
+          <button class="btn" style="padding:3px 9px; font-size:14px; font-weight:bold; line-height:1;" onclick="setZoom(canvasZoom - 0.1)" title="縮小">－</button>
+          <span id="zoom-label" style="font-size:12px; color:#555; min-width:38px; text-align:center; user-select:none;">100%</span>
+          <button class="btn" style="padding:3px 9px; font-size:14px; font-weight:bold; line-height:1;" onclick="setZoom(canvasZoom + 0.1)" title="放大">＋</button>
+          <button class="btn" style="padding:3px 9px; font-size:12px;" onclick="centerModulesGroup()" title="將所有模塊群組移動到畫布中心">模塊置中</button>
+          <button class="btn" style="padding:3px 9px; font-size:12px;" onclick="resetView()" title="重置縮放與平移">重置</button>
+        </div>
+        <button class="btn" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-color: #1a6fc4; color: #1a6fc4;" onclick="captureCanvas()">📷 擷取配置圖</button>
+      </div>
+    </div>
+    
+    <div class="canvas" id="canvas" onclick="handleCanvasClick(event)">
+      <div class="empty-hint" id="empty-hint">請由左側選擇模塊並點擊「插入模塊」開始設計</div>
+      <div id="canvas-viewport"></div>
+      <div id="selection-rect"></div>
+    </div>
+
+    <div class="list-area">
+      <div class="list-header">
+        <span>配置清單</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="btn" id="aggregateBtn" style="padding: 4px 12px; font-size: 12px;" onclick="toggleAggregate()">🧮 彙整型號</button>
+          <button class="btn" style="padding: 4px 12px; font-size: 12px;" onclick="exportCSV()">📁 匯出 CSV</button>
+        </div>
+      </div>
+      <table>
+        <colgroup>
+          <col class="col-name">
+          <col class="col-id">
+          <col class="col-spec">
+          <col class="col-qty">
+          <col class="col-note">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>模塊名稱</th>
+            <th>型號</th>
+            <th>規格 (mm)</th>
+            <th>數量</th>
+            <th>註記</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">已成功複製與下載</div>
+
+<script>
+// ==========================================
+// 1. 模組定義與 SVG 空格保留處
+// ==========================================
+const CUSTOM_SVG = {
+  // ── 三層櫃（Three Tier）──
+  "BL-AO-3": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 151.74"><defs><style>.cls-1{fill:#fff;stroke-linejoin:round;}.cls-1,.cls-2{stroke:#18130d;stroke-width:1.5px;}.cls-2{fill:none;stroke-miterlimit:10;}.cls-3{fill:#9e9fa0;}.cls-4{fill:#18130d;}</style></defs><rect class="cls-1" x="0.75" y="0.75" width="127.56" height="150.24"/><line class="cls-2" x1="64.53" y1="0.75" x2="64.53" y2="150.99"/><path class="cls-3" d="M76.94,79.45a2,2,0,0,1-2-2V70.32a2.05,2.05,0,0,1,2-2H84a2.05,2.05,0,0,1,2,2v7.09a2,2,0,0,1-2,2Zm0-9.92a.8.8,0,0,0-.8.79v7.09a.79.79,0,0,0,.8.79H84a.79.79,0,0,0,.8-.79V70.32a.8.8,0,0,0-.8-.79Z"/><path class="cls-4" d="M84,68.41a1.92,1.92,0,0,1,1.92,1.91v7.09A1.92,1.92,0,0,1,84,79.33H76.94A1.92,1.92,0,0,1,75,77.41V70.32a1.92,1.92,0,0,1,1.92-1.91H84m-7.08,9.92H84a.92.92,0,0,0,.92-.92V70.32a.92.92,0,0,0-.92-.91H76.94a.92.92,0,0,0-.92.91v7.09a.92.92,0,0,0,.92.92M84,68.16H76.94a2.17,2.17,0,0,0-2.17,2.16v7.09a2.17,2.17,0,0,0,2.17,2.17H84a2.17,2.17,0,0,0,2.17-2.17V70.32A2.17,2.17,0,0,0,84,68.16Zm-7.08,9.92a.67.67,0,0,1-.67-.67V70.32a.67.67,0,0,1,.67-.66H84a.67.67,0,0,1,.67.66v7.09a.67.67,0,0,1-.67.67Z"/></svg>`,
+  "BL-AS-3": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 151.74"><defs><style>.cls-1{fill:#fff;}.cls-2{fill:#ededee;}.cls-3,.cls-6{fill:none;stroke:#18130d;stroke-width:1.5px;}.cls-3{stroke-linejoin:round;}.cls-4{fill:#9e9fa0;}.cls-5{fill:#18130d;}.cls-6{stroke-miterlimit:10;}</style></defs><rect class="cls-1" x="0.75" y="0.75" width="127.56" height="150.24"/><rect class="cls-2" x="57.52" y="0.75" width="7.01" height="150.24"/><rect class="cls-3" x="0.75" y="0.75" width="127.56" height="150.24"/><path class="cls-4" d="M112.43,79.45a2,2,0,0,1-2-2V70.32a2,2,0,0,1,2-2h7.09a2,2,0,0,1,2,2v7.09a2,2,0,0,1-2,2Zm0-9.92a.8.8,0,0,0-.79.79v7.09a.79.79,0,0,0,.79.79h7.09a.79.79,0,0,0,.79-.79V70.32a.79.79,0,0,0-.79-.79Z"/><path class="cls-5" d="M119.52,68.41a1.92,1.92,0,0,1,1.92,1.91v7.09a1.92,1.92,0,0,1-1.92,1.92h-7.09a1.92,1.92,0,0,1-1.91-1.92V70.32a1.92,1.92,0,0,1,1.91-1.91h7.09m-7.09,9.92h7.09a.92.92,0,0,0,.92-.92V70.32a.92.92,0,0,0-.92-.91h-7.09a.91.91,0,0,0-.91.91v7.09a.92.92,0,0,0,.91.92m7.09-10.17h-7.09a2.16,2.16,0,0,0-2.16,2.16v7.09a2.17,2.17,0,0,0,2.16,2.17h7.09a2.17,2.17,0,0,0,2.17-2.17V70.32a2.17,2.17,0,0,0-2.17-2.16Zm-7.09,9.92a.66.66,0,0,1-.66-.67V70.32a.66.66,0,0,1,.66-.66h7.09a.67.67,0,0,1,.67.66v7.09a.67.67,0,0,1-.67.67Z"/><path class="cls-4" d="M9.54,79.45a2,2,0,0,1-2-2V70.32a2,2,0,0,1,2-2h7.09a2,2,0,0,1,2,2v7.09a2,2,0,0,1-2,2Zm0-9.92a.79.79,0,0,0-.79.79v7.09a.79.79,0,0,0,.79.79h7.09a.79.79,0,0,0,.79-.79V70.32a.8.8,0,0,0-.79-.79Z"/><path class="cls-5" d="M16.63,68.41a1.92,1.92,0,0,1,1.91,1.91v7.09a1.92,1.92,0,0,1-1.91,1.92H9.54a1.92,1.92,0,0,1-1.92-1.92V70.32a1.92,1.92,0,0,1,1.92-1.91h7.09M9.54,78.33h7.09a.92.92,0,0,0,.91-.92V70.32a.91.91,0,0,0-.91-.91H9.54a.92.92,0,0,0-.92.91v7.09a.92.92,0,0,0,.92.92m7.09-10.17H9.54a2.17,2.17,0,0,0-2.17,2.16v7.09a2.17,2.17,0,0,0,2.17,2.17h7.09a2.17,2.17,0,0,0,2.16-2.17V70.32a2.16,2.16,0,0,0-2.16-2.16ZM9.54,78.08a.67.67,0,0,1-.67-.67V70.32a.67.67,0,0,1,.67-.66h7.09a.67.67,0,0,1,.66.66v7.09a.67.67,0,0,1-.66.67Z"/><line class="cls-6" x1="64.53" y1="0.75" x2="64.53" y2="150.99"/></svg>`,
+  "BL-AD-3": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 151.74"><defs><style>.cls-1{fill:#fff;stroke-linejoin:round;}.cls-1,.cls-2{stroke:#18130d;stroke-width:1.5px;}.cls-2{fill:none;stroke-miterlimit:10;}.cls-3{fill:#9e9fa0;}.cls-4{fill:#18130d;}</style></defs><rect class="cls-1" x="0.75" y="0.75" width="127.56" height="150.24"/><line class="cls-2" x1="0.75" y1="50.83" x2="128.31" y2="50.83"/><line class="cls-2" x1="0.75" y1="100.91" x2="128.31" y2="100.91"/><path class="cls-3" d="M61,79.45a2,2,0,0,1-2.05-2V70.32a2.05,2.05,0,0,1,2.05-2h7.08a2.05,2.05,0,0,1,2.05,2v7.09a2,2,0,0,1-2.05,2Zm0-9.92a.8.8,0,0,0-.8.79v7.09a.79.79,0,0,0,.8.79h7.08a.79.79,0,0,0,.8-.79V70.32a.8.8,0,0,0-.8-.79Z"/><path class="cls-4" d="M68.07,68.41A1.92,1.92,0,0,1,70,70.32v7.09a1.92,1.92,0,0,1-1.92,1.92H61a1.92,1.92,0,0,1-1.92-1.92V70.32A1.92,1.92,0,0,1,61,68.41h7.08M61,78.33h7.08a.92.92,0,0,0,.92-.92V70.32a.92.92,0,0,0-.92-.91H61a.92.92,0,0,0-.92.91v7.09a.92.92,0,0,0,.92.92m7.08-10.17H61a2.17,2.17,0,0,0-2.17,2.16v7.09A2.17,2.17,0,0,0,61,79.58h7.08a2.17,2.17,0,0,0,2.17-2.17V70.32a2.17,2.17,0,0,0-2.17-2.16ZM61,78.08a.67.67,0,0,1-.67-.67V70.32a.67.67,0,0,1,.67-.66h7.08a.67.67,0,0,1,.67.66v7.09a.67.67,0,0,1-.67.67Z"/><path class="cls-3" d="M61,129.53a2,2,0,0,1-2.05-2V120.4a2.05,2.05,0,0,1,2.05-2h7.08a2.05,2.05,0,0,1,2.05,2v7.09a2,2,0,0,1-2.05,2Zm0-9.92a.8.8,0,0,0-.8.79v7.09a.79.79,0,0,0,.8.79h7.08a.79.79,0,0,0,.8-.79V120.4a.8.8,0,0,0-.8-.79Z"/><path class="cls-4" d="M68.07,118.49A1.92,1.92,0,0,1,70,120.4v7.09a1.92,1.92,0,0,1-1.92,1.92H61a1.92,1.92,0,0,1-1.92-1.92V120.4A1.92,1.92,0,0,1,61,118.49h7.08M61,128.41h7.08a.92.92,0,0,0,.92-.92V120.4a.92.92,0,0,0-.92-.91H61a.92.92,0,0,0-.92.91v7.09a.92.92,0,0,0,.92.92m7.08-10.17H61a2.17,2.17,0,0,0-2.17,2.16v7.09A2.17,2.17,0,0,0,61,129.66h7.08a2.17,2.17,0,0,0,2.17-2.17V120.4a2.17,2.17,0,0,0-2.17-2.16ZM61,128.16a.67.67,0,0,1-.67-.67V120.4a.67.67,0,0,1,.67-.66h7.08a.67.67,0,0,1,.67.66v7.09a.67.67,0,0,1-.67.67Z"/><path class="cls-3" d="M61,29.37a2,2,0,0,1-2.05-2V20.25A2.05,2.05,0,0,1,61,18.2h7.08a2.05,2.05,0,0,1,2.05,2.05v7.08a2,2,0,0,1-2.05,2Zm0-9.92a.8.8,0,0,0-.8.8v7.08a.79.79,0,0,0,.8.79h7.08a.79.79,0,0,0,.8-.79V20.25a.8.8,0,0,0-.8-.8Z"/><path class="cls-4" d="M68.07,18.33A1.92,1.92,0,0,1,70,20.25v7.08a1.92,1.92,0,0,1-1.92,1.92H61a1.92,1.92,0,0,1-1.92-1.92V20.25A1.92,1.92,0,0,1,61,18.33h7.08M61,28.25h7.08a.92.92,0,0,0,.92-.92V20.25a.92.92,0,0,0-.92-.92H61a.92.92,0,0,0-.92.92v7.08a.92.92,0,0,0,.92.92m7.08-10.17H61a2.17,2.17,0,0,0-2.17,2.17v7.08A2.17,2.17,0,0,0,61,29.5h7.08a2.17,2.17,0,0,0,2.17-2.17V20.25a2.17,2.17,0,0,0-2.17-2.17ZM61,28a.67.67,0,0,1-.67-.67V20.25a.67.67,0,0,1,.67-.67h7.08a.67.67,0,0,1,.67.67v7.08a.67.67,0,0,1-.67.67Z"/></svg>`,
+  "BL-AG-3": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 151.74"><defs><style>.cls-1{fill:#c7c7c8;}.cls-2{fill:none;}.cls-2,.cls-3{stroke:#18130d;stroke-width:1.5px;}.cls-2,.cls-3,.cls-4{stroke-linejoin:round;}.cls-3{fill:#fff;}.cls-4{fill:#585858;stroke:#b4b5b6;stroke-width:0.5px;opacity:0.7;}</style></defs><rect class="cls-1" x="3.58" y="3.58" width="121.89" height="144.57"/><rect class="cls-2" x="-7.75" y="14.92" width="144.57" height="121.89" transform="translate(140.4 11.34) rotate(90)"/><rect class="cls-3" x="3.58" y="49.33" width="121.89" height="3.01"/><rect class="cls-3" x="3.58" y="99.4" width="121.89" height="3.01"/><rect class="cls-2" x="0.75" y="0.75" width="127.56" height="150.24"/><rect class="cls-4" x="22.01" y="44.69" width="147.4" height="62.36" rx="0.71" transform="translate(171.58 -19.84) rotate(90)"/><rect class="cls-4" x="-40.35" y="44.69" width="147.4" height="62.36" rx="0.71" transform="translate(109.22 42.52) rotate(90)"/></svg>`,
+  "BL-AN-3": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 151.74"><defs><style>.cls-1,.cls-4{fill:#fff;}.cls-2{fill:#c7c7c8;}.cls-3{fill:none;}.cls-3,.cls-4{stroke:#18130d;stroke-linejoin:round;stroke-width:1.5px;}</style></defs><rect class="cls-1" x="0.75" y="0.75" width="127.56" height="150.24"/><polygon class="cls-2" points="3.58 3.58 3.58 148.15 19.05 134.33 110.01 134.33 110.01 17.4 125.47 3.58 3.58 3.58"/><rect class="cls-3" x="0.75" y="0.75" width="127.56" height="150.24"/><rect class="cls-3" x="-7.75" y="14.92" width="144.57" height="121.89" transform="translate(140.4 11.34) rotate(90)"/><rect class="cls-4" x="3.58" y="49.33" width="121.89" height="3.01"/><rect class="cls-4" x="3.58" y="99.4" width="121.89" height="3.01"/></svg>`,
+
+  // ── 雙層櫃（Two Tier）──
+  "BL-AO-2": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 102.13"><defs><style>.cls-1{fill:#fff;stroke-linejoin:round;}.cls-1,.cls-2{stroke:#18130d;stroke-width:1.5px;}.cls-2{fill:none;stroke-miterlimit:10;}.cls-3{fill:#9e9fa0;}.cls-4{fill:#18130d;}</style></defs><rect class="cls-1" x="0.75" y="0.84" width="127.56" height="100.54"/><line class="cls-2" x1="64.53" y1="0.84" x2="64.53" y2="101.38"/><path class="cls-3" d="M76.94,55.15a2.05,2.05,0,0,1-2-2V46a2,2,0,0,1,2-2H84a2,2,0,0,1,2,2v7.09a2.05,2.05,0,0,1-2,2Zm0-9.92a.79.79,0,0,0-.8.79v7.09a.8.8,0,0,0,.8.79H84a.8.8,0,0,0,.8-.79V46a.79.79,0,0,0-.8-.79Z"/><path class="cls-4" d="M84,44.1A1.92,1.92,0,0,1,85.94,46v7.09A1.92,1.92,0,0,1,84,55H76.94A1.92,1.92,0,0,1,75,53.11V46a1.92,1.92,0,0,1,1.92-1.92H84M76.94,54H84a.92.92,0,0,0,.92-.91V46A.92.92,0,0,0,84,45.1H76.94A.92.92,0,0,0,76,46v7.09a.92.92,0,0,0,.92.91M84,43.85H76.94A2.17,2.17,0,0,0,74.77,46v7.09a2.17,2.17,0,0,0,2.17,2.16H84a2.17,2.17,0,0,0,2.17-2.16V46A2.17,2.17,0,0,0,84,43.85Zm-7.08,9.92a.67.67,0,0,1-.67-.66V46a.67.67,0,0,1,.67-.67H84a.67.67,0,0,1,.67.67v7.09a.67.67,0,0,1-.67.66Z"/></svg>`,
+  "BL-AS-2": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 102.13"><defs><style>.cls-1{fill:#fff;}.cls-2{fill:#ededee;}.cls-3,.cls-6{fill:none;stroke:#18130d;stroke-width:1.5px;}.cls-3{stroke-linejoin:round;}.cls-4{fill:#9e9fa0;}.cls-5{fill:#18130d;}.cls-6{stroke-miterlimit:10;}</style></defs><rect class="cls-1" x="0.75" y="0.66" width="127.56" height="100.82"/><rect class="cls-2" x="57.52" y="0.56" width="7.01" height="100.82"/><rect class="cls-3" x="0.75" y="0.84" width="127.56" height="100.54"/><path class="cls-4" d="M112.43,55.15a2,2,0,0,1-2-2V46a2,2,0,0,1,2-2h7.09a2,2,0,0,1,2,2v7.09a2,2,0,0,1-2,2Zm0-9.92a.79.79,0,0,0-.79.79v7.09a.8.8,0,0,0,.79.79h7.09a.79.79,0,0,0,.79-.79V46a.79.79,0,0,0-.79-.79Z"/><path class="cls-5" d="M119.52,44.1A1.92,1.92,0,0,1,121.44,46v7.09A1.92,1.92,0,0,1,119.52,55h-7.09a1.92,1.92,0,0,1-1.91-1.91V46a1.92,1.92,0,0,1,1.91-1.92h7.09M112.43,54h7.09a.92.92,0,0,0,.92-.91V46a.92.92,0,0,0-.92-.92h-7.09a.92.92,0,0,0-.91.92v7.09a.91.91,0,0,0,.91.91m7.09-10.17h-7.09A2.17,2.17,0,0,0,110.27,46v7.09a2.16,2.16,0,0,0,2.16,2.16h7.09a2.17,2.17,0,0,0,2.17-2.16V46a2.17,2.17,0,0,0-2.17-2.17Zm-7.09,9.92a.66.66,0,0,1-.66-.66V46a.66.66,0,0,1,.66-.67h7.09a.67.67,0,0,1,.67.67v7.09a.67.67,0,0,1-.67.66Z"/><path class="cls-4" d="M9.54,55.15a2,2,0,0,1-2-2V46a2,2,0,0,1,2-2h7.09a2,2,0,0,1,2,2v7.09a2,2,0,0,1-2,2Zm0-9.92a.79.79,0,0,0-.79.79v7.09a.79.79,0,0,0,.79.79h7.09a.8.8,0,0,0,.79-.79V46a.79.79,0,0,0-.79-.79Z"/><path class="cls-5" d="M16.63,44.1A1.92,1.92,0,0,1,18.54,46v7.09A1.92,1.92,0,0,1,16.63,55H9.54a1.92,1.92,0,0,1-1.92-1.91V46A1.92,1.92,0,0,1,9.54,44.1h7.09M9.54,54h7.09a.91.91,0,0,0,.91-.91V46a.92.92,0,0,0-.91-.92H9.54a.92.92,0,0,0-.92.92v7.09a.92.92,0,0,0,.92.91m7.09-10.17H9.54A2.17,2.17,0,0,0,7.37,46v7.09a2.17,2.17,0,0,0,2.17,2.16h7.09a2.16,2.16,0,0,0,2.16-2.16V46a2.17,2.17,0,0,0-2.16-2.17ZM9.54,53.77a.67.67,0,0,1-.67-.66V46a.67.67,0,0,1,.67-.67h7.09a.67.67,0,0,1,.66.67v7.09a.67.67,0,0,1-.66.66Z"/><line class="cls-6" x1="64.53" y1="0.84" x2="64.53" y2="101.38"/></svg>`,
+  "BL-AD-2": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 102.13"><defs><style>.cls-1{fill:#fff;stroke-linejoin:round;}.cls-1,.cls-2{stroke:#18130d;stroke-width:1.5px;}.cls-2{fill:none;stroke-miterlimit:10;}.cls-3{fill:#9e9fa0;}.cls-4{fill:#18130d;}</style></defs><rect class="cls-1" x="0.75" y="0.84" width="127.56" height="100.54"/><line class="cls-2" x1="0.75" y1="51.3" x2="128.31" y2="51.3"/><path class="cls-3" d="M61,29.85a2.05,2.05,0,0,1-2.05-2.05V20.72a2,2,0,0,1,2.05-2h7.08a2,2,0,0,1,2,2V27.8a2,2,0,0,1-2,2.05Zm0-9.92a.79.79,0,0,0-.8.79V27.8a.8.8,0,0,0,.8.8h7.08a.79.79,0,0,0,.79-.8V20.72a.79.79,0,0,0-.79-.79Z"/><path class="cls-4" d="M68.07,18.8A1.92,1.92,0,0,1,70,20.72V27.8a1.92,1.92,0,0,1-1.92,1.92H61a1.92,1.92,0,0,1-1.92-1.92V20.72A1.92,1.92,0,0,1,61,18.8h7.08M61,28.72h7.08A.92.92,0,0,0,69,27.8V20.72a.92.92,0,0,0-.92-.92H61a.92.92,0,0,0-.92.92V27.8a.92.92,0,0,0,.92.92m7.08-10.17H61a2.17,2.17,0,0,0-2.17,2.17V27.8A2.17,2.17,0,0,0,61,30h7.08a2.17,2.17,0,0,0,2.17-2.17V20.72a2.17,2.17,0,0,0-2.17-2.17ZM61,28.47a.67.67,0,0,1-.67-.67V20.72a.67.67,0,0,1,.67-.67h7.08a.67.67,0,0,1,.67.67V27.8a.67.67,0,0,1-.67.67Z"/><path class="cls-3" d="M61,79.93a2.05,2.05,0,0,1-2.05-2.05V70.8a2.05,2.05,0,0,1,2.05-2h7.08a2,2,0,0,1,2,2v7.08a2,2,0,0,1-2,2.05ZM61,70a.8.8,0,0,0-.8.8v7.08a.8.8,0,0,0,.8.8h7.08a.79.79,0,0,0,.79-.8V70.8a.79.79,0,0,0-.79-.8Z"/><path class="cls-4" d="M68.07,68.88A1.92,1.92,0,0,1,70,70.8v7.08a1.92,1.92,0,0,1-1.92,1.92H61a1.92,1.92,0,0,1-1.92-1.92V70.8A1.92,1.92,0,0,1,61,68.88h7.08M61,78.8h7.08a.92.92,0,0,0,.92-.92V70.8a.92.92,0,0,0-.92-.92H61a.92.92,0,0,0-.92.92v7.08a.92.92,0,0,0,.92.92m7.08-10.17H61a2.17,2.17,0,0,0-2.17,2.17v7.08A2.17,2.17,0,0,0,61,80.05h7.08a2.17,2.17,0,0,0,2.17-2.17V70.8a2.17,2.17,0,0,0-2.17-2.17ZM61,78.55a.67.67,0,0,1-.67-.67V70.8a.67.67,0,0,1,.67-.67h7.08a.67.67,0,0,1,.67.67v7.08a.67.67,0,0,1-.67.67Z"/></svg>`,
+  "BL-AG-2": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 102.13"><defs><style>.cls-1{fill:#c7c7c8;}.cls-2{fill:none;}.cls-2,.cls-3{stroke:#18130d;stroke-width:1.5px;}.cls-2,.cls-3,.cls-4{stroke-linejoin:round;}.cls-3{fill:#fff;}.cls-4{fill:#585858;stroke:#b4b5b6;stroke-width:0.5px;opacity:0.7;}</style></defs><rect class="cls-1" x="3.58" y="3.67" width="121.89" height="94.72"/><rect class="cls-2" x="0.75" y="0.84" width="127.56" height="100.54"/><rect class="cls-2" x="17.09" y="-9.84" width="94.87" height="121.89" transform="translate(115.64 -13.42) rotate(90)"/><rect class="cls-3" x="3.58" y="49.56" width="121.89" height="3.01"/><rect class="cls-4" x="46.84" y="19.91" width="97.73" height="62.36" rx="0.71" transform="translate(146.81 -44.62) rotate(90)"/><rect class="cls-4" x="-15.52" y="19.91" width="97.73" height="62.36" rx="0.71" transform="translate(84.44 17.75) rotate(90)"/></svg>`,
+  "BL-AN-2": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 102.13"><defs><style>.cls-1,.cls-4{fill:#fff;}.cls-2{fill:#c7c7c8;}.cls-3{fill:none;}.cls-3,.cls-4{stroke:#18130d;stroke-linejoin:round;stroke-width:1.5px;}</style></defs><rect class="cls-1" x="0.75" y="0.56" width="127.56" height="100.82"/><polygon class="cls-2" points="3.58 4.06 3.58 51.06 3.58 54.13 3.58 98.55 19.05 84.73 110.01 84.73 110.01 54.13 110.01 51.06 110.01 17.87 125.47 4.06 3.58 4.06"/><rect class="cls-3" x="0.75" y="0.84" width="127.56" height="100.54"/><rect class="cls-3" x="17.09" y="-9.84" width="94.87" height="121.89" transform="translate(115.64 -13.42) rotate(90)"/><rect class="cls-4" x="3.58" y="49.56" width="121.89" height="3.01"/></svg>`,
+
+  // ── 置物櫃（Locker）──
+  "BL-L4B": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 151.74"><defs><style>.cls-1{fill:#fff;}.cls-1,.cls-2,.cls-4,.cls-5{stroke:#18130d;}.cls-1,.cls-5{stroke-linejoin:round;}.cls-1,.cls-2,.cls-5{stroke-width:1.5px;}.cls-2,.cls-5{fill:none;}.cls-2,.cls-4{stroke-miterlimit:10;}.cls-3{fill:#18130d;}.cls-4{fill:#363433;}</style></defs><rect class="cls-1" x="0.75" y="0.75" width="127.56" height="150.24"/><line class="cls-2" x1="64.53" y1="0.75" x2="64.53" y2="150.99"/><rect class="cls-3" x="6.26" y="33.3" width="2.69" height="10.92" rx="1.35"/><rect class="cls-3" x="70.04" y="33.3" width="2.69" height="10.92" rx="1.35"/><rect class="cls-4" x="17.27" y="6.78" width="40.25" height="4.67" rx="0.75"/><rect class="cls-4" x="81.05" y="6.78" width="40.25" height="4.67" rx="0.75"/><line class="cls-5" x1="0.75" y1="75.87" x2="128.31" y2="75.87"/><rect class="cls-3" x="6.26" y="108.41" width="2.69" height="10.92" rx="1.35"/><rect class="cls-3" x="70.04" y="108.41" width="2.69" height="10.92" rx="1.35"/><rect class="cls-4" x="17.27" y="81.9" width="40.25" height="4.67" rx="0.75"/><rect class="cls-4" x="81.05" y="81.9" width="40.25" height="4.67" rx="0.75"/></svg>`,
+  "BL-L2U": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 151.74"><defs><style>.cls-1{fill:#fff;stroke-linejoin:round;}.cls-1,.cls-2,.cls-4{stroke:#18130d;}.cls-1,.cls-2{stroke-width:1.5px;}.cls-2{fill:none;}.cls-2,.cls-4{stroke-miterlimit:10;}.cls-3{fill:#18130d;}.cls-4{fill:#363433;}</style></defs><rect class="cls-1" x="0.75" y="0.75" width="127.56" height="150.24"/><line class="cls-2" x1="64.53" y1="150.99" x2="64.53" y2="0.75"/><rect class="cls-3" x="6.26" y="72.41" width="2.69" height="10.92" rx="1.35"/><rect class="cls-3" x="70.04" y="72.41" width="2.69" height="10.92" rx="1.35"/><rect class="cls-4" x="17.27" y="140.29" width="40.25" height="4.67" rx="0.75"/><rect class="cls-4" x="81.05" y="140.29" width="40.25" height="4.67" rx="0.75"/></svg>`,
+  "BL-L2B": `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 151.74"><defs><style>.cls-1{fill:#fff;stroke-linejoin:round;}.cls-1,.cls-2,.cls-4{stroke:#18130d;}.cls-1,.cls-2{stroke-width:1.5px;}.cls-2{fill:none;}.cls-2,.cls-4{stroke-miterlimit:10;}.cls-3{fill:#18130d;}.cls-4{fill:#363433;}</style></defs><rect class="cls-1" x="0.75" y="0.75" width="127.56" height="150.24"/><line class="cls-2" x1="64.53" y1="0.75" x2="64.53" y2="150.99"/><rect class="cls-3" x="6.26" y="68.41" width="2.69" height="10.92" rx="1.35"/><rect class="cls-3" x="70.04" y="68.41" width="2.69" height="10.92" rx="1.35"/><rect class="cls-4" x="17.27" y="6.78" width="40.25" height="4.67" rx="0.75"/><rect class="cls-4" x="81.05" y="6.78" width="40.25" height="4.67" rx="0.75"/></svg>`,
+
+  // ── 其他配件（Other）──
+  "BL-B":   `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 7.09"><defs><style>.cls-1{fill:#18130d;}</style></defs><rect class="cls-1" width="129.06" height="7.09" rx="0.75"/></svg>`
+};
+
+const SOFA_MODELS = {
+  "three_tier": [
+    { "id": "BL-AO-3", "name": "三層開門櫃",     "width": 900, "height": 1058, "spec": "900*460*1060" },
+    { "id": "BL-AS-3", "name": "三層滑門櫃",     "width": 900, "height": 1058, "spec": "900*460*1060" },
+    { "id": "BL-AD-3", "name": "三層抽屜櫃",     "width": 900, "height": 1058, "spec": "900*460*1060" },
+    { "id": "BL-AG-3", "name": "三層玻璃滑門櫃", "width": 900, "height": 1058, "spec": "900*460*1060" },
+    { "id": "BL-AN-3", "name": "三層開放櫃",     "width": 900, "height": 1058, "spec": "900*460*1060" }
+  ],
+  "two_tier": [
+    { "id": "BL-AO-2", "name": "雙層開門櫃",     "width": 900, "height": 712, "spec": "900*460*710" },
+    { "id": "BL-AS-2", "name": "雙層滑門櫃",     "width": 900, "height": 712, "spec": "900*460*710" },
+    { "id": "BL-AD-2", "name": "雙層抽屜櫃",     "width": 900, "height": 712, "spec": "900*460*710" },
+    { "id": "BL-AG-2", "name": "雙層玻璃滑門櫃", "width": 900, "height": 712, "spec": "900*460*710" },
+    { "id": "BL-AN-2", "name": "雙層開放櫃",     "width": 900, "height": 712, "spec": "900*460*710" }
+  ],
+  "locker": [
+    { "id": "BL-L4B", "name": "四門置物櫃",       "width": 900, "height": 1058, "spec": "900*460*1060" },
+    { "id": "BL-L2U", "name": "二門置物櫃(上置)", "width": 900, "height": 1058, "spec": "900*460*1060" },
+    { "id": "BL-L2B", "name": "二門置物櫃(下置)", "width": 900, "height": 1058, "spec": "900*460*1060" }
+  ],
+  "other": [
+    { "id": "BL-B", "name": "底座", "width": 900, "height": 49, "spec": "900*460*50" }
+  ]
+};
+
+
+
+// 比例尺：1mm = 0.1px
+const SCALE = 0.1;
+// 吸附閾值（邏輯像素）：8px = 80mm，在縮放 1x 時約 8 個螢幕像素的吸附範圍
+const SNAP_THRESHOLD = 8;
+// 切線對齊最大允許偏移量（邏輯像素）：設為模塊最大邊長，確保任何高度的模塊都能完整對齊
+const TANGENT_SNAP_THRESHOLD = 200;
+const ZOOM_MIN = 0.3;
+const ZOOM_MAX = 3.0;
+
+let canvasZoom = 1.0;
+
+// 畫布平移偏移量（螢幕像素，不受縮放影響）
+let panX = 0;
+let panY = 0;
+
+let modules = [];
+let selectedUid = null;
+let selectedUids = new Set(); // 多選集合
+let isAggregated = false; // 配置清單是否為「彙整型號」檢視模式
+let multiSelectMode = false; // iPad 多選模式
+
+// 拖拽控制變數
+let isDragging = false;
+let isMultiDragging = false;
+let isBoxSelecting = false;
+let skipNextCanvasClick = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let moduleStartX = 0;
+let moduleStartY = 0;
+let boxSelectStartX = 0;
+let boxSelectStartY = 0;
+let multiDragStartPositions = []; // 多選拖曳起始位置
+
+// ==========================================
+// 2. 初始化與下拉選單
+// ==========================================
+document.addEventListener("DOMContentLoaded", () => {
+  initSelectData('three_tier');
+  initSelectData('two_tier');
+  initSelectData('locker');
+  initSelectData('other');
+  
+  document.addEventListener('click', () => {
+    closeAllSelects();
+  });
+
+  // 初始化畫布框選功能
+  initBoxSelect();
+
+  // 初始化畫布平移功能
+  initCanvasPan();
+
+  // Delete / Backspace 快捷鍵：刪除選取模塊
+  document.addEventListener('keydown', (e) => {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !e.repeat) {
+      const tag = document.activeElement && document.activeElement.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (selectedUid !== null || selectedUids.size > 0) {
+        e.preventDefault();
+        deleteSelected();
+      }
+    }
+    // Ctrl+D / Cmd+D：複製選取模塊
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd' && !e.repeat) {
+      const tag = document.activeElement && document.activeElement.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      e.preventDefault();
+      duplicateSelected();
+    }
+  });
+
+  // 滑鼠滾輪縮放
+  document.getElementById('canvas').addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.1 : -0.1;
+    setZoom(canvasZoom + delta);
+  }, { passive: false });
+});
+
+// ==========================================
+// 縮放功能
+// ==========================================
+function setZoom(newZoom) {
+  canvasZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(newZoom * 10) / 10));
+  document.getElementById('zoom-label').textContent = `${Math.round(canvasZoom * 100)}%`;
+  document.getElementById('canvas').style.setProperty('--zoom', canvasZoom);
+  updateCanvasTransform();
+}
+
+// ==========================================
+// 畫布平移（Pan）功能
+// 統一套用 pan + zoom 到「模塊視口」與「背景網格」，
+// 確保平移時網格與模塊永遠同步移動
+// ==========================================
+function updateCanvasTransform() {
+  const viewport = document.getElementById('canvas-viewport');
+  const canvasEl = document.getElementById('canvas');
+  viewport.style.transform = `translate(${panX}px, ${panY}px) scale(${canvasZoom})`;
+  // 背景網格的兩層圓點使用相同的位移量，維持與模塊同步
+  canvasEl.style.backgroundPosition = `${panX}px ${panY}px, ${panX}px ${panY}px`;
+}
+
+// 重置視圖：縮放與平移一併還原
+function resetView() {
+  panX = 0;
+  panY = 0;
+  setZoom(1);
+}
+
+// 模塊置中：僅平移「視圖」（背景網格 + 模塊視口）本身，
+// 不更動任何模塊的邏輯座標，因此網格與模塊的相對位置完全不變
+function centerModulesGroup() {
+  if (modules.length === 0) {
+    showToast("畫布目前沒有任何模塊");
+    return;
+  }
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  modules.forEach(mod => {
+    const wPx = mod.width * SCALE;
+    const hPx = mod.height * SCALE;
+    minX = Math.min(minX, mod.x);
+    minY = Math.min(minY, mod.y);
+    maxX = Math.max(maxX, mod.x + wPx);
+    maxY = Math.max(maxY, mod.y + hPx);
+  });
+
+  const groupCenterX = (minX + maxX) / 2;
+  const groupCenterY = (minY + maxY) / 2;
+
+  const canvasEl = document.getElementById('canvas');
+  const viewCenterX = canvasEl.clientWidth / 2;
+  const viewCenterY = canvasEl.clientHeight / 2;
+
+  // 讓群組（以邏輯座標計算的外接框中心）對齊畫布可視區域中心
+  panX = viewCenterX - groupCenterX * canvasZoom;
+  panY = viewCenterY - groupCenterY * canvasZoom;
+  updateCanvasTransform();
+  showToast("已將模塊群組置中");
+}
+
+function initCanvasPan() {
+  const canvasEl = document.getElementById('canvas');
+
+  // ── 滑鼠：右鍵或中鍵拖曳平移 ──
+  canvasEl.addEventListener('mousedown', (e) => {
+    const wantsPan = e.button === 1 || e.button === 2;
+    if (!wantsPan) return;
+    e.preventDefault();
+
+    let isPanning = true;
+    const panStartX = e.clientX;
+    const panStartY = e.clientY;
+    const panOriginX = panX;
+    const panOriginY = panY;
+    canvasEl.style.cursor = 'grabbing';
+
+    const onPanMove = (evt) => {
+      if (!isPanning) return;
+      panX = panOriginX + (evt.clientX - panStartX);
+      panY = panOriginY + (evt.clientY - panStartY);
+      updateCanvasTransform();
+    };
+    const onPanUp = () => {
+      isPanning = false;
+      canvasEl.style.cursor = '';
+      document.removeEventListener('mousemove', onPanMove);
+      document.removeEventListener('mouseup', onPanUp);
+    };
+
+    document.addEventListener('mousemove', onPanMove);
+    document.addEventListener('mouseup', onPanUp);
+  });
+
+  canvasEl.addEventListener('contextmenu', (e) => e.preventDefault());
+  canvasEl.addEventListener('auxclick', (e) => {
+    if (e.button === 1) e.preventDefault();
+  });
+
+  // ── 觸控：雙指平移 + 捏合縮放 ──
+  let touchPanActive = false;
+  let pinchActive    = false;
+  let lastPinchDist  = 0;
+  let panTouchOriginX = 0, panTouchOriginY = 0;
+  let panTouchStartX  = 0, panTouchStartY  = 0;
+
+  function getTouchMidpoint(t1, t2) {
+    return { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+  }
+  function getTouchDist(t1, t2) {
+    const dx = t1.clientX - t2.clientX, dy = t1.clientY - t2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  canvasEl.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      touchPanActive = true;
+      pinchActive    = true;
+      lastPinchDist  = getTouchDist(e.touches[0], e.touches[1]);
+      const mid = getTouchMidpoint(e.touches[0], e.touches[1]);
+      panTouchStartX  = mid.x;
+      panTouchStartY  = mid.y;
+      panTouchOriginX = panX;
+      panTouchOriginY = panY;
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  canvasEl.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && (touchPanActive || pinchActive)) {
+      e.preventDefault();
+      const t1 = e.touches[0], t2 = e.touches[1];
+
+      // 捏合縮放（以兩指中心為錨點）
+      const newDist = getTouchDist(t1, t2);
+      if (pinchActive && lastPinchDist > 0) {
+        const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, canvasZoom * (newDist / lastPinchDist)));
+        const mid = getTouchMidpoint(t1, t2);
+        const rect = canvasEl.getBoundingClientRect();
+        const anchorX = mid.x - rect.left;
+        const anchorY = mid.y - rect.top;
+        panX = anchorX - (anchorX - panX) * (newZoom / canvasZoom);
+        panY = anchorY - (anchorY - panY) * (newZoom / canvasZoom);
+        canvasZoom = newZoom;
+        document.getElementById('zoom-label').textContent = `${Math.round(canvasZoom * 100)}%`;
+        document.getElementById('canvas').style.setProperty('--zoom', canvasZoom);
+        lastPinchDist = newDist;
+      }
+
+      // 雙指平移
+      if (touchPanActive) {
+        const mid = getTouchMidpoint(t1, t2);
+        panX = panTouchOriginX + (mid.x - panTouchStartX);
+        panY = panTouchOriginY + (mid.y - panTouchStartY);
+      }
+
+      updateCanvasTransform();
+    }
+  }, { passive: false });
+
+  canvasEl.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) {
+      touchPanActive = false;
+      pinchActive    = false;
+      lastPinchDist  = 0;
+    }
+  }, { passive: true });
+}
+
+// ==========================================
+// 吸附功能：支援多邊形輪廓（含斜邊）的線段對線段精確吸附
+// ==========================================
+
+/**
+ * 各型號輪廓頂點（正規化座標，x/y 均為 0~1）
+ * 頂點順序為順時針封閉多邊形。
+ * null = 使用矩形包圍盒。
+ */
+const MODULE_OUTLINE = (() => {
+  const outlines = {};
+
+  // 所有 BL- 系列模塊皆為矩形，使用矩形包圍盒（null = 使用矩形）
+  [
+    'BL-AO-3','BL-AS-3','BL-AD-3','BL-AG-3','BL-AN-3',
+    'BL-AO-2','BL-AS-2','BL-AD-2','BL-AG-2','BL-AN-2',
+    'BL-L4B','BL-L2U','BL-L2B',
+    'BL-B'
+  ].forEach(id => {
+    outlines[id] = null;
+  });
+
+  return outlines;
+})();
+
+/** 取得模塊在世界坐標中的輪廓頂點（含位移與旋轉） */
+function getModuleWorldVertices(mod) {
+  const wPx = mod.width * SCALE;
+  const hPx = mod.height * SCALE;
+  const outline = MODULE_OUTLINE[mod.id];
+  const normPts = outline ? outline : [[0,0],[1,0],[1,1],[0,1]];
+
+  const cx = mod.x + wPx / 2;
+  const cy = mod.y + hPx / 2;
+
+  const angle = ((mod.rotate || 0) * Math.PI) / 180;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+
+  return normPts.map(([nx, ny]) => {
+    const lx = nx * wPx - wPx / 2;
+    const ly = ny * hPx - hPx / 2;
+    return {
+      x: cx + lx * cos - ly * sin,
+      y: cy + lx * sin + ly * cos
+    };
+  });
+}
+
+/** 將頂點陣列轉為封閉線段陣列 */
+function vertsToSegments(verts) {
+  const segs = [];
+  const n = verts.length;
+  for (let i = 0; i < n; i++) {
+    const a = verts[i], b = verts[(i + 1) % n];
+    // 略過重複點（折線末端與首端相同時避免零長度線段）
+    if (Math.abs(a.x - b.x) > 0.001 || Math.abs(a.y - b.y) > 0.001) {
+      segs.push(a.x, a.y, b.x, b.y);
+    }
+  }
+  return segs; // 格式：[ax,ay,bx,by, ax,ay,bx,by, ...]
+}
+
+/**
+ * 找 seg1 各取樣點對 seg2 的最近 (dx,dy)，
+ * 並額外計算切線方向對齊偏移 (tdx,tdy) 供任務二/三使用。
+ *
+ * 回傳：
+ *  dist        — 最近距離（總向量長度）
+ *  dx, dy      — 法線方向偏移（讓 seg1 貼上 seg2）
+ *  isParallel  — 兩線段是否近似平行（夾角 < PARALLEL_ANGLE_TOL）
+ *  tdx, tdy    — 切線方向對齊偏移（僅 isParallel 時有意義）
+ *  normalDist  — 純法線距離（垂直距離，用於判斷是否為面對面吸附）
+ */
+function seg2segSnap(a1x,a1y,b1x,b1y, a2x,a2y,b2x,b2y) {
+  // ── 1. 原有邏輯：找最近取樣點的法線偏移 ──
+  const SAMPLES = 5;
+  let bestDistSq = Infinity, bdx = 0, bdy = 0;
+  for (let i = 0; i <= SAMPLES; i++) {
+    const t = i / SAMPLES;
+    const px = a1x + (b1x-a1x)*t, py = a1y + (b1y-a1y)*t;
+    const dx2 = b2x-a2x, dy2 = b2y-a2y, lenSq = dx2*dx2+dy2*dy2;
+    let ct = lenSq < 1e-9 ? 0 : Math.max(0,Math.min(1,((px-a2x)*dx2+(py-a2y)*dy2)/lenSq));
+    const cpx = a2x+ct*dx2, cpy = a2y+ct*dy2;
+    const ddx = cpx-px, ddy = cpy-py, distSq = ddx*ddx+ddy*ddy;
+    if (distSq < bestDistSq) { bestDistSq=distSq; bdx=ddx; bdy=ddy; }
+  }
+  const dist = Math.sqrt(bestDistSq);
+
+  // ── 2. 判斷兩線段是否近似平行 ──
+  const PARALLEL_ANGLE_TOL = 0.12; // sin(約7°) 以內視為平行
+  const d1x = b1x-a1x, d1y = b1y-a1y;
+  const d2x = b2x-a2x, d2y = b2y-a2y;
+  const len1 = Math.sqrt(d1x*d1x+d1y*d1y);
+  const len2 = Math.sqrt(d2x*d2x+d2y*d2y);
+
+  if (len1 < 1e-6 || len2 < 1e-6) {
+    // 退化線段：無法判斷平行，直接回傳法線結果
+    return { dist, dx: bdx, dy: bdy, isParallel: false, tdx: 0, tdy: 0, normalDist: dist };
+  }
+
+  // 單位向量
+  const u1x = d1x/len1, u1y = d1y/len1; // seg1 切線方向
+  const u2x = d2x/len2, u2y = d2y/len2; // seg2 切線方向
+
+  // 叉積絕對值 = |sin θ|，越小越平行
+  const crossAbs = Math.abs(u1x*u2y - u1y*u2x);
+  // 點積 < 0 代表兩線段「面對面」（反向平行）；> 0 代表同向，吸附會造成重疊，排除
+  const dot = u1x*u2x + u1y*u2y;
+  const isParallel = crossAbs < PARALLEL_ANGLE_TOL && dot < 0;
+
+  // ── 3. 純法線距離（連接中點垂直於切線的分量） ──
+  // 使用 seg1 中點到 seg2 的最近點距離在法線方向上的投影
+  const mid1x = (a1x+b1x)*0.5, mid1y = (a1y+b1y)*0.5;
+  const toMid2x = mid1x-a2x, toMid2y = mid1y-a2y;
+  // 法線方向（垂直於 seg2）
+  const nx = -u2y, ny = u2x;
+  const normalDist = Math.abs(toMid2x*nx + toMid2y*ny);
+
+  // ── 4. 切線對齊偏移（僅平行時計算） ──
+  let tdx = 0, tdy = 0;
+  if (isParallel) {
+    // 使用 seg2 的切線方向做投影軸
+    // 將 seg1 兩端點投影到 seg2 所在的切線軸
+    const proj_a1 = a1x*u2x + a1y*u2y;
+    const proj_b1 = b1x*u2x + b1y*u2y;
+    // seg2 兩端點的投影值
+    const proj_a2 = a2x*u2x + a2y*u2y;
+    const proj_b2 = b2x*u2x + b2y*u2y;
+
+    // seg1、seg2 在切線軸上的範圍（排序）
+    const s1min = Math.min(proj_a1, proj_b1);
+    const s1max = Math.max(proj_a1, proj_b1);
+    const s2min = Math.min(proj_a2, proj_b2);
+    const s2max = Math.max(proj_a2, proj_b2);
+
+    // 計算讓 seg1 端點對齊 seg2 端點所需的最小切線偏移：
+    // 若 seg1 的 min 端偏左 → 往右推；若 max 端偏右 → 往左推
+    // 取絕對值較小的那個（最小移動量）
+    const shiftToAlignMin = s2min - s1min; // 讓 seg1.min 對齊 seg2.min
+    const shiftToAlignMax = s2max - s1max; // 讓 seg1.max 對齊 seg2.max
+
+    let tShift = 0;
+    if (Math.abs(shiftToAlignMin) < Math.abs(shiftToAlignMax)) {
+      tShift = shiftToAlignMin;
+    } else {
+      tShift = shiftToAlignMax;
+    }
+
+    tdx = tShift * u2x;
+    tdy = tShift * u2y;
+  }
+
+  return { dist, dx: bdx, dy: bdy, isParallel, tdx, tdy, normalDist };
+}
+
+/**
+ * 主吸附函數：
+ * draggedMods = 被拖曳的模塊陣列（傳入才啟用多邊形吸附）
+ * 退回模式：傳統包圍盒（draggedMods 為空時）
+ *
+ * 回傳 { dx, dy, tdx, tdy }：
+ *   dx/dy   — 法線吸附偏移（讓吸附邊貼合）
+ *   tdx/tdy — 切線對齊偏移（讓對齊邊對齊，任務三套用）
+ *             僅當最佳吸附對為共線平行（isParallel && normalDist < SNAP_THRESHOLD）時非零
+ */
+function getSnapDelta(tx, ty, tw, th, excludeUids, draggedMods) {
+  const statics = modules.filter(m => !excludeUids.has(m.uid));
+  if (statics.length === 0) return { dx: 0, dy: 0, tdx: 0, tdy: 0 };
+  // 吸附閾值隨縮放自動調整：縮得越小，邏輯像素吸附範圍要更大才能讓使用者感受到吸附
+  const effectiveThreshold = SNAP_THRESHOLD / canvasZoom;
+
+  // 取被拖曳模塊的線段
+  let dSegs = []; // [ax,ay,bx,by,...]
+  if (draggedMods && draggedMods.length > 0) {
+    draggedMods.forEach(mod => {
+      const v = getModuleWorldVertices(mod);
+      dSegs = dSegs.concat(vertsToSegments(v));
+    });
+  } else {
+    dSegs = [tx,ty,tx+tw,ty, tx+tw,ty,tx+tw,ty+th, tx+tw,ty+th,tx,ty+th, tx,ty+th,tx,ty];
+  }
+
+  let bestDist = effectiveThreshold + 0.001;
+  let bestDx = 0, bestDy = 0;
+  // 最佳吸附對的切線對齊資訊
+  let bestTdx = 0, bestTdy = 0;
+
+  statics.forEach(o => {
+    const oV = getModuleWorldVertices(o);
+    const oSegs = vertsToSegments(oV);
+
+    for (let di = 0; di < dSegs.length; di += 4) {
+      for (let oi = 0; oi < oSegs.length; oi += 4) {
+        const r = seg2segSnap(
+          dSegs[di],dSegs[di+1],dSegs[di+2],dSegs[di+3],
+          oSegs[oi],oSegs[oi+1],oSegs[oi+2],oSegs[oi+3]
+        );
+        // ── 只接受「面對面」反向平行的邊對 ──
+        // 非平行邊（同向、斜角、端點相碰）一律排除，
+        // 避免錯誤地以模塊「背面」或「側邊端點」觸發吸附，
+        // 造成右側模塊被推到左側或與左側重疊的問題。
+        if (!r.isParallel) continue;
+
+        if (r.dist < bestDist) {
+          bestDist = r.dist;
+          bestDx = r.dx;
+          bestDy = r.dy;
+
+          // 辨識「共線吸附對」：平行 且 法線距離在閾值內 → 帶入切線偏移
+          // normalDist < SNAP_THRESHOLD 確保是「面對面」吸附，而非端點剛好碰到線
+          if (r.normalDist < effectiveThreshold) {
+            bestTdx = r.tdx;
+            bestTdy = r.tdy;
+          } else {
+            // 非共線吸附（斜角相碰、端點對線等）→ 不觸發切線對齊
+            bestTdx = 0;
+            bestTdy = 0;
+          }
+        }
+      }
+    }
+  });
+
+  return { dx: bestDx, dy: bestDy, tdx: bestTdx, tdy: bestTdy };
+}
+
+function initSelectData(type) {
+  const nativeSelect = document.getElementById(`${type}-select`);
+  const optionsList = document.getElementById(`${type}-options-list`);
+  const models = SOFA_MODELS[type];
+
+  nativeSelect.innerHTML = '';
+  optionsList.innerHTML = '';
+
+  models.forEach((model, index) => {
+    const opt = document.createElement('option');
+    opt.value = model.id;
+    opt.textContent = `${model.name} (${model.id})`;
+    nativeSelect.appendChild(opt);
+
+    const customOpt = document.createElement('div');
+    customOpt.className = `custom-option${index === 0 ? ' selected' : ''}`;
+    customOpt.setAttribute('data-id', model.id);
+    customOpt.onclick = (e) => {
+      e.stopPropagation();
+      selectCustomOption(type, model.id);
+    };
+
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'custom-option-icon';
+    
+    const imgEl = document.createElement('img');
+    const svgBlob = new Blob([CUSTOM_SVG[model.id] || ""], {type:"image/svg+xml"});
+    imgEl.src = URL.createObjectURL(svgBlob);
+    iconDiv.appendChild(imgEl);
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'custom-option-name';
+    nameDiv.textContent = `${model.name} (${model.id})`;
+
+    customOpt.appendChild(iconDiv);
+    customOpt.appendChild(nameDiv);
+    optionsList.appendChild(customOpt);
+
+    if (index === 0) {
+      updateTriggerContent(type, model.id);
+    }
+  });
+}
+
+function toggleSelect(type) {
+  const target = document.getElementById(`${type}-custom-select`);
+  const isOpen = target.classList.contains('open');
+  closeAllSelects();
+  if (!isOpen) {
+    target.classList.add('open');
+  }
+}
+
+function closeAllSelects() {
+  document.querySelectorAll('.custom-select').forEach(el => el.classList.remove('open'));
+}
+
+function selectCustomOption(type, modelId) {
+  const nativeSelect = document.getElementById(`${type}-select`);
+  nativeSelect.value = modelId;
+
+  const optionsList = document.getElementById(`${type}-options-list`);
+  optionsList.querySelectorAll('.custom-option').forEach(opt => {
+    if (opt.getAttribute('data-id') === modelId) {
+      opt.classList.add('selected');
+    } else {
+      opt.classList.remove('selected');
+    }
+  });
+
+  updateTriggerContent(type, modelId);
+  closeAllSelects();
+}
+
+function updateTriggerContent(type, modelId) {
+  const models = SOFA_MODELS[type];
+  const model = models.find(m => m.id === modelId);
+  const triggerContent = document.getElementById(`${type}-trigger-content`);
+  if (!model) return;
+
+  triggerContent.innerHTML = `
+    <div class="trigger-icon">
+      <img src="${(()=>{const b=new Blob([CUSTOM_SVG[model.id]||""],{type:"image/svg+xml"});return URL.createObjectURL(b);})()} ">
+    </div>
+    <span style="font-size:12px; color:#1a1a1a;">${model.name}</span>
+  `;
+}
+
+function getSelectedModel(type) {
+  const nativeSelect = document.getElementById(`${type}-select`);
+  const id = nativeSelect.value;
+  return SOFA_MODELS[type].find(m => m.id === id);
+}
+
+// ==========================================
+// 3. 畫布核心控制
+// ==========================================
+function insertModule(type) {
+  const model = getSelectedModel(type);
+  if (!model) return;
+
+  const canvasEl = document.getElementById('canvas');
+  const wPx = model.width * SCALE;
+  const hPx = model.height * SCALE;
+
+  // 找一個不與任何現有模塊重疊的插入位置
+  function overlaps(tx, ty) {
+    return modules.some(m => {
+      const mw = m.width * SCALE, mh = m.height * SCALE;
+      return tx < m.x + mw && tx + wPx > m.x && ty < m.y + mh && ty + hPx > m.y;
+    });
+  }
+
+  // 計算畫布目前可見區域（邏輯像素，供第一個模塊置中用）
+  const viewMinX = -panX / canvasZoom;
+  const viewMinY = -panY / canvasZoom;
+  const viewMaxX = viewMinX + canvasEl.clientWidth / canvasZoom;
+  const viewMaxY = viewMinY + canvasEl.clientHeight / canvasZoom;
+  const viewCenterX = (viewMinX + viewMaxX) / 2;
+  const viewCenterY = (viewMinY + viewMaxY) / 2;
+
+  let insertX, insertY;
+  if (modules.length === 0) {
+    // 畫布空白：插在可見區域中心
+    insertX = viewCenterX - wPx / 2;
+    insertY = viewCenterY - hPx / 2;
+  } else {
+    // 從現有模塊群組的邊界向外，以螺旋方式逐層掃描候選位置，
+    // 取第一個不重疊且「距離現有群組中心最近」的位置。
+    const GAP = 10; // 模塊間相鄰間距（邏輯像素）
+    const STEP = GAP; // 掃描步進（越小越精確，但運算量增加）
+
+    // 計算現有模塊群組的邊界框與中心
+    let gMinX = Infinity, gMinY = Infinity, gMaxX = -Infinity, gMaxY = -Infinity;
+    modules.forEach(m => {
+      const mw = m.width * SCALE, mh = m.height * SCALE;
+      if (m.x < gMinX) gMinX = m.x;
+      if (m.y < gMinY) gMinY = m.y;
+      if (m.x + mw > gMaxX) gMaxX = m.x + mw;
+      if (m.y + mh > gMaxY) gMaxY = m.y + mh;
+    });
+    const groupCX = (gMinX + gMaxX) / 2;
+    const groupCY = (gMinY + gMaxY) / 2;
+
+    // 候選位置：緊貼群組邊界四側各放一排，再逐層向外擴展
+    // 以 BFS 螺旋方式：每一層 = 群組 bbox 向外擴展 layerIdx * STEP
+    let bestX = null, bestY = null, bestDist = Infinity;
+    const MARGIN = GAP; // 新模塊與群組邊界的最小間距
+
+    // 最多向外搜尋 200 步（避免無限迴圈）
+    for (let layer = 1; layer <= 200 && bestX === null; layer++) {
+      const outerL = gMinX - layer * STEP - wPx - MARGIN;
+      const outerR = gMaxX + layer * STEP + MARGIN;
+      const outerT = gMinY - layer * STEP - hPx - MARGIN;
+      const outerB = gMaxY + layer * STEP + MARGIN;
+
+      // 四條邊上的候選點：x 或 y 固定在外框邊，另一軸沿整個範圍掃描
+      const candidates = [];
+
+      // 右側一欄（x 固定）
+      for (let y = outerT; y <= outerB + hPx; y += STEP) {
+        candidates.push({ x: outerR, y });
+      }
+      // 左側一欄（x 固定）
+      for (let y = outerT; y <= outerB + hPx; y += STEP) {
+        candidates.push({ x: outerL, y });
+      }
+      // 下方一排（y 固定）
+      for (let x = outerL; x <= outerR + wPx; x += STEP) {
+        candidates.push({ x, y: outerB });
+      }
+      // 上方一排（y 固定）
+      for (let x = outerL; x <= outerR + wPx; x += STEP) {
+        candidates.push({ x, y: outerT });
+      }
+
+      candidates.forEach(({ x, y }) => {
+        if (overlaps(x, y)) return;
+        // 以新模塊中心到群組中心的距離排序
+        const cx = x + wPx / 2, cy = y + hPx / 2;
+        const dist = (cx - groupCX) ** 2 + (cy - groupCY) ** 2;
+        if (dist < bestDist) { bestDist = dist; bestX = x; bestY = y; }
+      });
+    }
+
+    if (bestX !== null) {
+      insertX = bestX;
+      insertY = bestY;
+    } else {
+      // 極端 fallback：群組正右方
+      insertX = gMaxX + GAP;
+      insertY = groupCY - hPx / 2;
+    }
+  }
+
+  const uid = Date.now() + Math.floor(Math.random() * 1000);
+
+  const newModule = {
+    uid: uid,
+    id: model.id,
+    name: model.name,
+    width: model.width,
+    height: model.height,
+    spec: model.spec,
+    x: insertX,
+    y: insertY,
+    rotate: 0,
+    note: "",
+  };
+
+  modules.push(newModule);
+  renderModuleDOM(newModule);
+  renderTable();
+  selectModule(uid);
+  updateEmptyHint();
+  showToast(`已插入 ${model.id}`);
+}
+
+function renderModuleDOM(mod) {
+  const viewport = document.getElementById('canvas-viewport');
+  const div = document.createElement('div');
+  div.className = 'sofa-module';
+  div.id = `mod-${mod.uid}`;
+
+  div.style.width = `${mod.width * SCALE}px`;
+  div.style.height = `${mod.height * SCALE}px`;
+  div.style.left = `${mod.x}px`;
+  div.style.top = `${mod.y}px`;
+
+  const imgEl = document.createElement('img');
+  const _svgBlob = new Blob([CUSTOM_SVG[mod.id] || ""], {type:"image/svg+xml"});
+  imgEl.src = URL.createObjectURL(_svgBlob);
+  div.appendChild(imgEl);
+
+  div.style.transform = `rotate(${mod.rotate}deg)`;
+
+  div.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+    // Ctrl（Windows）或 ⌘ Command（Mac）+ 點擊：加選 / 減選
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      toggleModuleSelection(mod.uid);
+      return;
+    }
+    // 若點擊的模塊已在多選集合中，直接開始群組拖曳
+    if (selectedUids.size > 1 && selectedUids.has(mod.uid)) {
+      startDrag(e, mod);
+    } else {
+      selectModule(mod.uid);
+      startDrag(e, mod);
+    }
+  });
+
+  // 阻止 click 冒泡到 canvas，避免觸發 handleCanvasClick 清空選取
+  div.addEventListener('click', (e) => e.stopPropagation());
+
+  div.addEventListener('touchstart', (e) => {
+    e.stopPropagation();
+    if (multiSelectMode) {
+      // 多選模式：tap 加選/減選，不啟動拖曳
+      toggleModuleSelection(mod.uid);
+    } else if (selectedUids.size > 1 && selectedUids.has(mod.uid)) {
+      // 已在多選集合中：直接群組拖曳
+      startDrag(e.touches[0], mod);
+    } else {
+      selectModule(mod.uid);
+      startDrag(e.touches[0], mod);
+    }
+  }, { passive: true });
+
+
+
+  viewport.appendChild(div);
+}
+
+function updateModuleDOMPosition(mod) {
+  const div = document.getElementById(`mod-${mod.uid}`);
+  if (div) {
+    div.style.left = `${mod.x}px`;
+    div.style.top = `${mod.y}px`;
+    div.style.transform = `rotate(${mod.rotate}deg)`;
+  }
+}
+
+function selectModule(uid) {
+  // 清除舊單選
+  if (selectedUid !== null) {
+    const prevDiv = document.getElementById(`mod-${selectedUid}`);
+    if (prevDiv) prevDiv.classList.remove('selected');
+    const prevRow = document.getElementById(`row-${selectedUid}`);
+    if (prevRow) prevRow.style.background = '';
+  }
+  // 清除多選
+  clearMultiSelection();
+
+  selectedUid = uid;
+
+  if (selectedUid !== null) {
+    const currDiv = document.getElementById(`mod-${selectedUid}`);
+    if (currDiv) currDiv.classList.add('selected');
+    const currRow = document.getElementById(`row-${selectedUid}`);
+    if (currRow) currRow.style.background = '#e1f0fe';
+  }
+}
+
+// Ctrl / ⌘ + 點擊：加入或移出多選集合
+function toggleModuleSelection(uid) {
+  // 若目前是單選狀態，先將單選模塊納入多選集合
+  if (selectedUid !== null && selectedUids.size === 0) {
+    const prevDiv = document.getElementById(`mod-${selectedUid}`);
+    if (prevDiv) { prevDiv.classList.remove('selected'); prevDiv.classList.add('multi-selected'); }
+    const prevRow = document.getElementById(`row-${selectedUid}`);
+    if (prevRow) { prevRow.style.background = ''; prevRow.classList.add('multi-selected-row'); }
+    selectedUids.add(selectedUid);
+    selectedUid = null;
+  }
+
+  if (selectedUids.has(uid)) {
+    // 已在集合中 → 移除高亮，從集合刪除
+    const div = document.getElementById(`mod-${uid}`);
+    if (div) div.classList.remove('multi-selected');
+    const row = document.getElementById(`row-${uid}`);
+    if (row) row.classList.remove('multi-selected-row');
+    selectedUids.delete(uid);
+
+    // 若集合剩下 1 個，退回單選模式
+    if (selectedUids.size === 1) {
+      const lastUid = [...selectedUids][0];
+      selectedUids.clear();
+      // 直接設定單選，不呼叫 selectModule（避免它再次 clearMultiSelection）
+      selectedUid = lastUid;
+      const lastDiv = document.getElementById(`mod-${lastUid}`);
+      if (lastDiv) lastDiv.classList.add('selected');
+      const lastRow = document.getElementById(`row-${lastUid}`);
+      if (lastRow) lastRow.style.background = '#e1f0fe';
+    } else if (selectedUids.size === 0) {
+      // 集合清空，取消所有選取
+      selectedUid = null;
+    }
+  } else {
+    // 不在集合中 → 加入
+    selectedUids.add(uid);
+    const div = document.getElementById(`mod-${uid}`);
+    if (div) div.classList.add('multi-selected');
+    const row = document.getElementById(`row-${uid}`);
+    if (row) row.classList.add('multi-selected-row');
+  }
+}
+
+// ==========================================
+// 多選管理
+// ==========================================
+function clearMultiSelection() {
+  selectedUids.forEach(uid => {
+    const div = document.getElementById(`mod-${uid}`);
+    if (div) div.classList.remove('multi-selected');
+    const row = document.getElementById(`row-${uid}`);
+    if (row) row.classList.remove('multi-selected-row');
+  });
+  selectedUids.clear();
+}
+
+function applyMultiSelection(uids) {
+  // 先清除單選
+  if (selectedUid !== null) {
+    const prevDiv = document.getElementById(`mod-${selectedUid}`);
+    if (prevDiv) prevDiv.classList.remove('selected');
+    const prevRow = document.getElementById(`row-${selectedUid}`);
+    if (prevRow) prevRow.style.background = '';
+    selectedUid = null;
+  }
+  clearMultiSelection();
+
+  uids.forEach(uid => {
+    selectedUids.add(uid);
+    const div = document.getElementById(`mod-${uid}`);
+    if (div) div.classList.add('multi-selected');
+    const row = document.getElementById(`row-${uid}`);
+    if (row) row.classList.add('multi-selected-row');
+  });
+}
+
+// ==========================================
+// 框選引擎
+// ==========================================
+function initBoxSelect() {
+  const canvasEl = document.getElementById('canvas');
+  const selRect = document.getElementById('selection-rect');
+
+  canvasEl.addEventListener('mousedown', (e) => {
+    // 只有直接點到 canvas 背景（非模塊）才啟動框選
+    if (e.target !== canvasEl && e.target.id !== 'empty-hint' && e.target.id !== 'selection-rect' && e.target.id !== 'canvas-viewport') return;
+    // 中鍵拖曳或按住空白鍵時，交由畫布平移功能處理，框選不介入
+    if (e.button !== 0) return;
+
+    isBoxSelecting = true;
+    const rect = canvasEl.getBoundingClientRect();
+    // 框選起始點：視覺坐標（用於畫選框）
+    boxSelectStartX = e.clientX - rect.left;
+    boxSelectStartY = e.clientY - rect.top;
+
+    selRect.style.left   = boxSelectStartX + 'px';
+    selRect.style.top    = boxSelectStartY + 'px';
+    selRect.style.width  = '0px';
+    selRect.style.height = '0px';
+    selRect.style.display = 'block';
+
+    const onMove = (ev) => {
+      if (!isBoxSelecting) return;
+      const cx = ev.clientX - rect.left;
+      const cy = ev.clientY - rect.top;
+
+      // 選框繪製在視覺空間
+      const x = Math.min(cx, boxSelectStartX);
+      const y = Math.min(cy, boxSelectStartY);
+      const w = Math.abs(cx - boxSelectStartX);
+      const h = Math.abs(cy - boxSelectStartY);
+
+      selRect.style.left   = x + 'px';
+      selRect.style.top    = y + 'px';
+      selRect.style.width  = w + 'px';
+      selRect.style.height = h + 'px';
+    };
+
+    const onUp = (ev) => {
+      if (!isBoxSelecting) return;
+      isBoxSelecting = false;
+      selRect.style.display = 'none';
+
+      const cx = ev.clientX - rect.left;
+      const cy = ev.clientY - rect.top;
+
+      if (Math.abs(cx - boxSelectStartX) < 4 && Math.abs(cy - boxSelectStartY) < 4) {
+        // 單點空白處：清除所有選取（含多選）
+        clearMultiSelection();
+        selectModule(null);
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        skipNextCanvasClick = false;
+        return;
+      }
+
+      skipNextCanvasClick = true;
+
+      // 轉換為邏輯坐標（模塊的 x/y 為邏輯像素）後做交集判斷，需扣除目前畫布平移量
+      const sx = (Math.min(cx, boxSelectStartX) - panX) / canvasZoom;
+      const sy = (Math.min(cy, boxSelectStartY) - panY) / canvasZoom;
+      const ex = (Math.max(cx, boxSelectStartX) - panX) / canvasZoom;
+      const ey = (Math.max(cy, boxSelectStartY) - panY) / canvasZoom;
+
+      const matched = modules.filter(mod => {
+        const wPx = mod.width * SCALE;
+        const hPx = mod.height * SCALE;
+        const modCx = mod.x + wPx / 2;
+        const modCy = mod.y + hPx / 2;
+        return modCx >= sx && modCx <= ex && modCy >= sy && modCy <= ey;
+      });
+
+      if (matched.length === 1) {
+        selectModule(matched[0].uid);
+      } else if (matched.length > 1) {
+        applyMultiSelection(matched.map(m => m.uid));
+        showToast(`已選取 ${matched.length} 個模塊`);
+      } else {
+        selectModule(null);
+      }
+
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // ── 觸控：單指在畫布空白處拖曳 → 框選 ──
+  canvasEl.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const target = touch.target;
+    if (target !== canvasEl && target.id !== 'empty-hint' && target.id !== 'selection-rect' && target.id !== 'canvas-viewport') return;
+
+    isBoxSelecting = true;
+    const rect = canvasEl.getBoundingClientRect();
+    boxSelectStartX = touch.clientX - rect.left;
+    boxSelectStartY = touch.clientY - rect.top;
+
+    selRect.style.left   = boxSelectStartX + 'px';
+    selRect.style.top    = boxSelectStartY + 'px';
+    selRect.style.width  = '0px';
+    selRect.style.height = '0px';
+    selRect.style.display = 'block';
+
+    const onTouchMove = (ev) => {
+      if (!isBoxSelecting || ev.touches.length !== 1) return;
+      const t = ev.touches[0];
+      const cx = t.clientX - rect.left;
+      const cy = t.clientY - rect.top;
+      selRect.style.left   = Math.min(cx, boxSelectStartX) + 'px';
+      selRect.style.top    = Math.min(cy, boxSelectStartY) + 'px';
+      selRect.style.width  = Math.abs(cx - boxSelectStartX) + 'px';
+      selRect.style.height = Math.abs(cy - boxSelectStartY) + 'px';
+    };
+
+    const onTouchEnd = (ev) => {
+      if (!isBoxSelecting) return;
+      isBoxSelecting = false;
+      selRect.style.display = 'none';
+
+      const lastTouch = ev.changedTouches[0];
+      const cx = lastTouch.clientX - rect.left;
+      const cy = lastTouch.clientY - rect.top;
+
+      canvasEl.removeEventListener('touchmove', onTouchMove);
+      canvasEl.removeEventListener('touchend', onTouchEnd);
+
+      if (Math.abs(cx - boxSelectStartX) < 8 && Math.abs(cy - boxSelectStartY) < 8) {
+        clearMultiSelection();
+        selectModule(null);
+        skipNextCanvasClick = false;
+        return;
+      }
+
+      skipNextCanvasClick = true;
+      const sx = (Math.min(cx, boxSelectStartX) - panX) / canvasZoom;
+      const sy = (Math.min(cy, boxSelectStartY) - panY) / canvasZoom;
+      const ex = (Math.max(cx, boxSelectStartX) - panX) / canvasZoom;
+      const ey = (Math.max(cy, boxSelectStartY) - panY) / canvasZoom;
+
+      const matched = modules.filter(mod => {
+        const modCx = mod.x + (mod.width * SCALE) / 2;
+        const modCy = mod.y + (mod.height * SCALE) / 2;
+        return modCx >= sx && modCx <= ex && modCy >= sy && modCy <= ey;
+      });
+
+      if (matched.length === 1) {
+        selectModule(matched[0].uid);
+      } else if (matched.length > 1) {
+        applyMultiSelection(matched.map(m => m.uid));
+        showToast(`已選取 ${matched.length} 個模塊`);
+      } else {
+        selectModule(null);
+      }
+    };
+
+    canvasEl.addEventListener('touchmove', onTouchMove, { passive: true });
+    canvasEl.addEventListener('touchend', onTouchEnd, { passive: true });
+  }, { passive: true });
+}
+
+function handleCanvasClick(e) {
+  if (skipNextCanvasClick) {
+    skipNextCanvasClick = false;
+    return;
+  }
+  // 點擊畫布空白處：取消所有選取（含多選）
+  clearMultiSelection();
+  selectModule(null);
+}
+
+// ==========================================
+// 4. 拖拽引擎 (支援滑鼠與觸控、多選群組拖拽)
+// ==========================================
+function startDrag(e, mod) {
+  // 判斷是否為多選群組拖拽
+  const isGroupDrag = selectedUids.size > 1 && selectedUids.has(mod.uid);
+
+  isDragging = true;
+  let hasDragged = false;
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  moduleStartX = mod.x;
+  moduleStartY = mod.y;
+
+  // 記錄群組中每個模塊的起始位置
+  let groupStartPositions = [];
+  if (isGroupDrag) {
+    groupStartPositions = [...selectedUids].map(uid => {
+      const m = modules.find(x => x.uid === uid);
+      return m ? { uid, x: m.x, y: m.y } : null;
+    }).filter(Boolean);
+  }
+
+  const moveHandler = (evt) => {
+    if (!isDragging) return;
+    // 觸控拖曳時阻止頁面捲動
+    if (evt.cancelable && evt.touches) evt.preventDefault();
+    const clientX = evt.clientX !== undefined ? evt.clientX : (evt.touches && evt.touches[0].clientX);
+    const clientY = evt.clientY !== undefined ? evt.clientY : (evt.touches && evt.touches[0].clientY);
+
+    if (clientX === undefined || clientY === undefined) return;
+
+    // 除以縮放比例，轉為邏輯像素偏移
+    const dx = (clientX - dragStartX) / canvasZoom;
+    const dy = (clientY - dragStartY) / canvasZoom;
+
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      hasDragged = true;
+    }
+
+    const canvasEl = document.getElementById('canvas');
+    // 邏輯邊界（模塊坐標空間），需依目前畫布平移量換算出「目前可視範圍」
+    const viewMinX = -panX / canvasZoom;
+    const viewMinY = -panY / canvasZoom;
+    const viewMaxX = viewMinX + canvasEl.clientWidth / canvasZoom;
+    const viewMaxY = viewMinY + canvasEl.clientHeight / canvasZoom;
+
+    if (isGroupDrag) {
+      // 群組拖拽：先算出各模塊暫定位置，再對整個群組的邊界框做吸附
+      const tentative = groupStartPositions.map(({ uid, x: sx, y: sy }) => {
+        const m = modules.find(mo => mo.uid === uid);
+        if (!m) return null;
+        const wPx = m.width * SCALE;
+        const hPx = m.height * SCALE;
+        return { m, x: Math.min(Math.max(viewMinX, sx + dx), viewMaxX - wPx), y: Math.min(Math.max(viewMinY, sy + dy), viewMaxY - hPx) };
+      }).filter(Boolean);
+
+      // 計算群組邊界框
+      let gMinX = Infinity, gMinY = Infinity, gMaxX = -Infinity, gMaxY = -Infinity;
+      tentative.forEach(({ m, x, y }) => {
+        gMinX = Math.min(gMinX, x);
+        gMinY = Math.min(gMinY, y);
+        gMaxX = Math.max(gMaxX, x + m.width * SCALE);
+        gMaxY = Math.max(gMaxY, y + m.height * SCALE);
+      });
+      // 暫時套用位置，讓 getModuleWorldVertices 能讀取到拖曳後的座標
+      const savedPositions = tentative.map(({ m }) => ({ m, ox: m.x, oy: m.y }));
+      tentative.forEach(({ m, x, y }) => { m.x = x; m.y = y; });
+      const draggedModsList = tentative.map(t => t.m);
+      const snap = getSnapDelta(gMinX, gMinY, gMaxX - gMinX, gMaxY - gMinY, selectedUids, draggedModsList);
+      // 還原（後面會加上 snap.dx/dy 再正式設定）
+      savedPositions.forEach(({ m, ox, oy }) => { m.x = ox; m.y = oy; });
+
+      tentative.forEach(({ m, x, y }) => {
+        m.x = x + snap.dx;
+        m.y = y + snap.dy;
+        // 切線對齊：在法線吸附發生後，若偏移量在容許範圍內才套用
+        const tLen = Math.sqrt(snap.tdx * snap.tdx + snap.tdy * snap.tdy);
+        if (tLen > 0 && tLen <= TANGENT_SNAP_THRESHOLD / canvasZoom) {
+          m.x += snap.tdx;
+          m.y += snap.tdy;
+        }
+        updateModuleDOMPosition(m);
+      });
+    } else {
+      // 單選拖拽
+      const wPx = mod.width * SCALE;
+      const hPx = mod.height * SCALE;
+      let nx = Math.min(Math.max(viewMinX, moduleStartX + dx), viewMaxX - wPx);
+      let ny = Math.min(Math.max(viewMinY, moduleStartY + dy), viewMaxY - hPx);
+
+      // 先暫時更新模塊位置，讓 getModuleWorldVertices 能讀取到最新座標
+      const origX = mod.x, origY = mod.y;
+      mod.x = nx; mod.y = ny;
+      const snap = getSnapDelta(nx, ny, wPx, hPx, new Set([mod.uid]), [mod]);
+      mod.x = origX; mod.y = origY; // 還原，讓後面統一設定
+
+      nx += snap.dx;
+      ny += snap.dy;
+      // 切線對齊：在法線吸附發生後，若偏移量在容許範圍內才套用
+      const tLen = Math.sqrt(snap.tdx * snap.tdx + snap.tdy * snap.tdy);
+      if (tLen > 0 && tLen <= TANGENT_SNAP_THRESHOLD / canvasZoom) {
+        nx += snap.tdx;
+        ny += snap.tdy;
+      }
+
+      mod.x = nx;
+      mod.y = ny;
+      updateModuleDOMPosition(mod);
+    }
+  };
+
+  const upHandler = () => {
+    isDragging = false;
+    skipNextCanvasClick = true;
+    document.removeEventListener("mousemove", moveHandler);
+    document.removeEventListener("mouseup", upHandler);
+    document.removeEventListener("touchmove", moveHandler);
+    document.removeEventListener("touchend", upHandler);
+  };
+
+  document.addEventListener('mousemove', moveHandler);
+  document.addEventListener('mouseup', upHandler);
+  // passive: false 確保 iOS Safari 不會搶奪觸控使頁面捲動
+  document.addEventListener('touchmove', moveHandler, { passive: false });
+  document.addEventListener('touchend', upHandler);
+}
+
+// ==========================================
+// 5. 元件控制指令（刪除/清空）
+// ==========================================
+function deleteSelected() {
+  const toDelete = new Set();
+  if (selectedUid !== null) toDelete.add(selectedUid);
+  selectedUids.forEach(uid => toDelete.add(uid));
+
+  if (toDelete.size === 0) {
+    showToast('請先選取要刪除的模塊');
+    return;
+  }
+
+  toDelete.forEach(uid => {
+    const div = document.getElementById(`mod-${uid}`);
+    if (div) div.remove();
+    modules = modules.filter(m => m.uid !== uid);
+  });
+
+  selectedUid = null;
+  selectedUids.clear();
+
+  renderTable();
+  updateEmptyHint();
+  showToast(`已刪除 ${toDelete.size} 個模塊`);
+}
+
+function clearCanvas() {
+  if (modules.length === 0) {
+    showToast('畫布已是空的');
+    return;
+  }
+  if (!confirm('確定要清空所有配置嗎？')) return;
+
+  modules.forEach(mod => {
+    const div = document.getElementById(`mod-${mod.uid}`);
+    if (div) div.remove();
+  });
+  modules = [];
+  selectedUid = null;
+  selectedUids.clear();
+
+  renderTable();
+  updateEmptyHint();
+  showToast('已清空所有配置');
+}
+
+// ==========================================
+// 6. 配置清單表格與 CSV 匯出
+// ==========================================
+function updateEmptyHint() {
+  const hint = document.getElementById('empty-hint');
+  if (hint) hint.style.display = modules.length === 0 ? '' : 'none';
+}
+
+function renderTable() {
+  const tbody = document.getElementById('table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (isAggregated) {
+    // 彙整模式：依「型號 + 註記」聚合，相同型號但不同註記的品項分開計算
+    const map = new Map();
+    modules.forEach(mod => {
+      const key = mod.id + ' ' + (mod.note || '');
+      if (map.has(key)) {
+        map.get(key).qty++;
+      } else {
+        map.set(key, { name: mod.name, id: mod.id, spec: mod.spec, qty: 1, note: mod.note || '' });
+      }
+    });
+    map.forEach(item => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.name}</td>
+        <td>${item.id}</td>
+        <td>${item.spec}</td>
+        <td style="text-align:center;">${item.qty}</td>
+        <td class="note-cell"><span style="font-size:12px;color:#555;padding:4px 6px;display:block;">${item.note}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } else {
+    // 明細模式：每個模塊一行
+    modules.forEach((mod, idx) => {
+      const tr = document.createElement('tr');
+      tr.id = `row-${mod.uid}`;
+
+      // 若目前已被選取，套用高亮
+      if (mod.uid === selectedUid) {
+        tr.style.background = '#e1f0fe';
+      } else if (selectedUids.has(mod.uid)) {
+        tr.classList.add('multi-selected-row');
+      }
+
+      tr.innerHTML = `
+        <td>${mod.name}</td>
+        <td>${mod.id}</td>
+        <td>${mod.spec}</td>
+        <td style="text-align:center;">1</td>
+        <td class="note-cell"><textarea rows="1">${mod.note || ''}</textarea></td>
+      `;
+
+      // 備註欄即時同步回 module 資料
+      const textarea = tr.querySelector('textarea');
+      textarea.addEventListener('input', () => {
+        mod.note = textarea.value;
+      });
+
+      // 點擊列 → 選取對應模塊
+      tr.addEventListener('click', (e) => {
+        if (e.target.tagName === 'TEXTAREA') return;
+        selectModule(mod.uid);
+        const modDiv = document.getElementById(`mod-${mod.uid}`);
+        if (modDiv) modDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+function toggleAggregate() {
+  isAggregated = !isAggregated;
+  const btn = document.getElementById('aggregateBtn');
+  if (btn) {
+    btn.textContent = isAggregated ? '🧮 明細型號' : '🧮 彙整型號';
+  }
+  renderTable();
+}
+
+function exportCSV() {
+  if (modules.length === 0) {
+    showToast('配置清單是空的，無法匯出');
+    return;
+  }
+
+  const rows = [['模塊名稱', '型號', '規格(mm)', '數量', '備註']];
+
+  if (isAggregated) {
+    const map = new Map();
+    modules.forEach(mod => {
+      const key = mod.id + ' ' + (mod.note || '');
+      if (map.has(key)) {
+        map.get(key).qty++;
+      } else {
+        map.set(key, { name: mod.name, id: mod.id, spec: mod.spec, qty: 1, note: mod.note || '' });
+      }
+    });
+    map.forEach(item => rows.push([item.name, item.id, item.spec, item.qty, item.note]));
+  } else {
+    modules.forEach(mod => rows.push([mod.name, mod.id, mod.spec, 1, mod.note || '']));
+  }
+
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const bom = '\uFEFF'; // UTF-8 BOM，讓 Excel 正確顯示中文
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `LINE_Storage_BOM_${Date.now()}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('CSV 已匯出');
+}
+
+// ==========================================
+// 儲存 / 載入專案
+// ==========================================
+function saveProject() {
+  if (modules.length === 0) {
+    showToast('畫布是空的，無法儲存');
+    return;
+  }
+  const data = JSON.stringify({ version: 1, modules });
+  const blob = new Blob([data], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `LINE_Storage_Project_${Date.now()}.agora`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('專案已儲存');
+}
+
+function loadProject(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.modules || !Array.isArray(data.modules)) throw new Error('格式錯誤');
+
+      // 清除畫布
+      modules.forEach(mod => {
+        const div = document.getElementById(`mod-${mod.uid}`);
+        if (div) div.remove();
+      });
+      modules = [];
+      selectedUid = null;
+      selectedUids.clear();
+
+      // 載入模塊
+      data.modules.forEach(mod => {
+        // 確保必要欄位
+        if (!mod.uid || !mod.id || !CUSTOM_SVG[mod.id]) return;
+        mod.note = mod.note || '';
+        mod.rotate = mod.rotate || 0;
+        modules.push(mod);
+        renderModuleDOM(mod);
+      });
+
+      renderTable();
+      updateEmptyHint();
+      showToast(`已載入 ${modules.length} 個模塊`);
+    } catch (err) {
+      showToast('載入失敗：檔案格式不正確');
+    }
+  };
+  reader.readAsText(file);
+
+  // 重置 input，讓同一檔案可再次觸發 onchange
+  event.target.value = '';
+}
+
+// ==========================================
+// 7. 精確不失真：原生 2D Canvas 配置擷圖邏輯
+// ==========================================
+function captureCanvas() {
+  if (modules.length === 0) {
+    showToast("畫布空白，無法截圖");
+    return;
+  }
+
+  showToast("正在生成高解析度平面圖...");
+
+  const PADDING = 200; // 向外擴展 200 邏輯像素
+  const DPR = 2;       // 2 倍解析度輸出
+
+  // 1. 計算所有模塊旋轉後的實際邊界框
+  //    對每個模塊取 4 個角點做旋轉，求整體最大外框
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+  modules.forEach(mod => {
+    const wPx = mod.width * SCALE;
+    const hPx = mod.height * SCALE;
+    const cx = mod.x + wPx / 2;
+    const cy = mod.y + hPx / 2;
+
+    // 4 個角點（相對中心）
+    const _angle = ((mod.rotate || 0) * Math.PI) / 180;
+    const _cos = Math.cos(_angle);
+    const _sin = Math.sin(_angle);
+    [[-wPx/2, -hPx/2], [wPx/2, -hPx/2], [wPx/2, hPx/2], [-wPx/2, hPx/2]].forEach(([lx, ly]) => {
+      const wx = cx + lx * _cos - ly * _sin;
+      const wy = cy + lx * _sin + ly * _cos;
+      if (wx < minX) minX = wx;
+      if (wx > maxX) maxX = wx;
+      if (wy < minY) minY = wy;
+      if (wy > maxY) maxY = wy;
+    });
+  });
+
+  // 2. 加上 padding，得到擷圖範圍（邏輯像素）
+  const cropX = minX - PADDING;
+  const cropY = minY - PADDING;
+  const cropW = (maxX - minX) + PADDING * 2;
+  const cropH = (maxY - minY) + PADDING * 2;
+
+  // 3. 建立高解析度 Canvas
+  const exportCanvas = document.createElement('canvas');
+  exportCanvas.width  = Math.ceil(cropW * DPR);
+  exportCanvas.height = Math.ceil(cropH * DPR);
+  const ctx = exportCanvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  // 4. 填滿背景色
+  ctx.fillStyle = '#fcfcfc';
+  ctx.fillRect(0, 0, cropW, cropH);
+
+  // 5. 繪製網格（對齊世界座標網格，平移至擷圖原點）
+  const step1000 = 100;
+  const step200  = 20;
+
+  // 計算網格起始點（對齊世界座標的 20px 格線）
+  const gridStartX = Math.floor(cropX / step200) * step200;
+  const gridStartY = Math.floor(cropY / step200) * step200;
+
+  ctx.fillStyle = '#ccc';
+  for (let wx = gridStartX; wx <= cropX + cropW; wx += step200) {
+    for (let wy = gridStartY; wy <= cropY + cropH; wy += step200) {
+      ctx.beginPath();
+      ctx.arc(wx - cropX, wy - cropY, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  const gridStart1000X = Math.floor(cropX / step1000) * step1000;
+  const gridStart1000Y = Math.floor(cropY / step1000) * step1000;
+
+  ctx.fillStyle = '#5d5d5d';
+  for (let wx = gridStart1000X; wx <= cropX + cropW; wx += step1000) {
+    for (let wy = gridStart1000Y; wy <= cropY + cropH; wy += step1000) {
+      ctx.beginPath();
+      ctx.arc(wx - cropX, wy - cropY, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 6. 依序繪製所有模塊（座標平移至擷圖原點）
+  let loadedImagesCount = 0;
+
+  modules.forEach(mod => {
+    const img = new Image();
+    const _blob = new Blob([CUSTOM_SVG[mod.id] || ""], {type:"image/svg+xml"});
+    img.src = URL.createObjectURL(_blob);
+
+    img.onload = () => {
+      ctx.save();
+
+      const wPx = mod.width * SCALE;
+      const hPx = mod.height * SCALE;
+      // 模塊中心點平移至擷圖座標系
+      const centerX = (mod.x + wPx / 2) - cropX;
+      const centerY = (mod.y + hPx / 2) - cropY;
+
+      ctx.translate(centerX, centerY);
+      ctx.drawImage(img, -wPx / 2, -hPx / 2, wPx, hPx);
+
+      ctx.restore();
+
+      loadedImagesCount++;
+      if (loadedImagesCount === modules.length) {
+        finalizeDownload();
+      }
+    };
+
+    img.onerror = () => {
+      loadedImagesCount++;
+      if (loadedImagesCount === modules.length) {
+        finalizeDownload();
+      }
+    };
+  });
+
+  function finalizeDownload() {
+    const link = document.createElement('a');
+    link.download = `LINE_Storage_Design_${Date.now()}.png`;
+    link.href = exportCanvas.toDataURL('image/png');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast("平面圖下載完成");
+  }
+}
+// ==========================================
+// 複製選取模塊（Ctrl+D）
+// ==========================================
+function duplicateSelected() {
+  // 收集目前選取的所有模塊（單選 + 多選）
+  const targetUids = new Set();
+  if (selectedUid !== null) targetUids.add(selectedUid);
+  selectedUids.forEach(uid => targetUids.add(uid));
+
+  if (targetUids.size === 0) {
+    showToast('請先選取要複製的模塊');
+    return;
+  }
+
+  const targets = [...targetUids].map(uid => modules.find(m => m.uid === uid)).filter(Boolean);
+
+  // 計算被選取群組的 bounding box
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  targets.forEach(mod => {
+    const wPx = mod.width * SCALE;
+    const hPx = mod.height * SCALE;
+    if (mod.x < minX) minX = mod.x;
+    if (mod.y < minY) minY = mod.y;
+    if (mod.x + wPx > maxX) maxX = mod.x + wPx;
+    if (mod.y + hPx > maxY) maxY = mod.y + hPx;
+  });
+
+  // 偏移量：bounding box 右邊 + 20px 間距
+  const offsetX = (maxX - minX) + 20 / canvasZoom;
+  const offsetY = 0;
+
+  // 先清除目前選取狀態
+  if (selectedUid !== null) {
+    const prevDiv = document.getElementById(`mod-${selectedUid}`);
+    if (prevDiv) prevDiv.classList.remove('selected');
+    const prevRow = document.getElementById(`row-${selectedUid}`);
+    if (prevRow) prevRow.style.background = '';
+    selectedUid = null;
+  }
+  selectedUids.forEach(uid => {
+    const div = document.getElementById(`mod-${uid}`);
+    if (div) { div.classList.remove('selected'); div.classList.remove('multi-selected'); }
+    const row = document.getElementById(`row-${uid}`);
+    if (row) { row.style.background = ''; row.classList.remove('multi-selected-row'); }
+  });
+  selectedUids.clear();
+
+  // 建立副本
+  const newUids = [];
+  const baseTime = Date.now();
+  targets.forEach((mod, i) => {
+    const newUid = baseTime + i * 7 + Math.floor(Math.random() * 100);
+    const copy = {
+      uid:       newUid,
+      id:        mod.id,
+      name:      mod.name,
+      width:     mod.width,
+      height:    mod.height,
+      spec:      mod.spec,
+      x:         mod.x + offsetX,
+      y:         mod.y + offsetY,
+      note:      mod.note,
+    };
+    modules.push(copy);
+    renderModuleDOM(copy);
+    newUids.push(newUid);
+  });
+
+  // 選取所有新副本（群組選取）
+  if (newUids.length === 1) {
+    selectModule(newUids[0]);
+  } else {
+    newUids.forEach(uid => {
+      selectedUids.add(uid);
+      const div = document.getElementById(`mod-${uid}`);
+      if (div) div.classList.add('multi-selected');
+    });
+  }
+
+  renderTable();
+  updateEmptyHint();
+  showToast(`已複製 ${targets.length} 個模塊`);
+}
+
+// ==========================================
+// 多選模式切換（iPad 專用）
+// ==========================================
+function toggleMultiSelectMode() {
+  multiSelectMode = !multiSelectMode;
+  const btn = document.getElementById('multiselect-mode-btn');
+  if (multiSelectMode) {
+    btn.textContent = '☑ 多選模式：開啟';
+    btn.classList.add('multiselect-active');
+    showToast('多選模式已開啟，點擊模塊可累積加選');
+  } else {
+    btn.textContent = '☑ 多選模式：關閉';
+    btn.classList.remove('multiselect-active');
+    clearMultiSelection();
+    selectedUid = null;
+    showToast('多選模式已關閉');
+  }
+}
+
+// ==========================================
+// 8. 輔助工具 (吐司訊息通知)
+// ==========================================
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 2500);
+}
+</script>
+
+</body>
+</html>
