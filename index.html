@@ -251,28 +251,28 @@ td:not(:last-child), th:not(:last-child) { border-right: 1px solid #ddd; }
 
 
 /* 模塊元件 */
-.sofa-module {
+.product-module {
   position: absolute;
   cursor: grab;
   user-select: none;
   touch-action: none;
   box-sizing: border-box;
 }
-.sofa-module img {
+.product-module img {
   width: 100%;
   height: 100%;
   display: block;
   pointer-events: none;
   user-select: none;
 }
-.sofa-module.selected {
+.product-module.selected {
   outline: 2.5px solid #1a6fc4;
   outline-offset: 2px;
   box-shadow: 0 0 0 1px #fff, 0 4px 12px rgba(26,111,196,0.35);
   border-radius: 3px;
   z-index: 5;
 }
-.sofa-module:active { cursor: grabbing; }
+.product-module:active { cursor: grabbing; }
 
 /* 框選矩形樣式 */
 #selection-rect {
@@ -294,7 +294,7 @@ td:not(:last-child), th:not(:last-child) { border-right: 1px solid #ddd; }
 }
 
 /* 多選高亮：覆蓋單選樣式 */
-.sofa-module.multi-selected::after {
+.product-module.multi-selected::after {
   content: '';
   position: absolute;
   inset: -3px;
@@ -335,7 +335,7 @@ tr.multi-selected-row td {
     <div class="panel-title">LINE牆櫃模塊工具</div>
 
     <div class="section">
-      <div class="section-title">三層櫃（Three Tier）</div>
+      <div class="section-title">三層櫃模塊</div>
       <div class="custom-select" id="three_tier-custom-select">
         <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('three_tier')">
           <div class="trigger-content" id="three_tier-trigger-content">
@@ -351,7 +351,7 @@ tr.multi-selected-row td {
     <hr class="divider">
 
     <div class="section">
-      <div class="section-title">雙層櫃（Two Tier）</div>
+      <div class="section-title">雙層櫃模塊</div>
       <div class="custom-select" id="two_tier-custom-select">
         <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('two_tier')">
           <div class="trigger-content" id="two_tier-trigger-content">
@@ -367,7 +367,7 @@ tr.multi-selected-row td {
     <hr class="divider">
 
     <div class="section">
-      <div class="section-title">置物櫃（Locker）</div>
+      <div class="section-title">置物櫃模塊</div>
       <div class="custom-select" id="locker-custom-select">
         <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('locker')">
           <div class="trigger-content" id="locker-trigger-content">
@@ -383,7 +383,7 @@ tr.multi-selected-row td {
     <hr class="divider">
 
     <div class="section">
-      <div class="section-title">其他配件（Other）</div>
+      <div class="section-title">其他配件</div>
       <div class="custom-select" id="other-custom-select">
         <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('other')">
           <div class="trigger-content" id="other-trigger-content">
@@ -425,8 +425,8 @@ tr.multi-selected-row td {
     <div class="canvas-header">
       <div style="display:flex; align-items:center; gap:10px;">
         <span>LINE牆櫃 立面配置區</span>
-        <button class="btn" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-color: #3a8a3a; color: #3a8a3a;" onclick="saveProject()" title="將目前配置儲存為 .agora 專案檔">💾 儲存專案</button>
-        <label class="btn" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-color: #3a8a3a; color: #3a8a3a; cursor: pointer; margin: 0;" title="載入先前儲存的 .agora 專案檔">📂 載入專案<input type="file" id="loadProjectInput" accept=".agora" style="display:none;" onchange="loadProject(event)"></label>
+        <button class="btn" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-color: #3a8a3a; color: #3a8a3a;" onclick="saveProject()" title="將目前配置儲存為 .line 專案檔">💾 儲存專案</button>
+        <label class="btn" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-color: #3a8a3a; color: #3a8a3a; cursor: pointer; margin: 0;" title="載入先前儲存的 .line 專案檔">📂 載入專案<input type="file" id="loadProjectInput" accept=".line" style="display:none;" onchange="loadProject(event)"></label>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
         <div style="display:flex; align-items:center; gap:4px;">
@@ -507,7 +507,7 @@ const CUSTOM_SVG = {
   "BL-B":   `<svg id="圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129.06 7.09"><defs><style>.cls-1{fill:#18130d;}</style></defs><rect class="cls-1" width="129.06" height="7.09" rx="0.75"/></svg>`
 };
 
-const SOFA_MODELS = {
+const PRODUCT_MODELS = {
   "three_tier": [
     { "id": "BL-AO-3", "name": "三層開門櫃",     "width": 900, "height": 1058, "spec": "900*460*1060" },
     { "id": "BL-AS-3", "name": "三層滑門櫃",     "width": 900, "height": 1058, "spec": "900*460*1060" },
@@ -1014,7 +1014,7 @@ function getSnapDelta(tx, ty, tw, th, excludeUids, draggedMods) {
 function initSelectData(type) {
   const nativeSelect = document.getElementById(`${type}-select`);
   const optionsList = document.getElementById(`${type}-options-list`);
-  const models = SOFA_MODELS[type];
+  const models = PRODUCT_MODELS[type];
 
   nativeSelect.innerHTML = '';
   optionsList.innerHTML = '';
@@ -1086,7 +1086,7 @@ function selectCustomOption(type, modelId) {
 }
 
 function updateTriggerContent(type, modelId) {
-  const models = SOFA_MODELS[type];
+  const models = PRODUCT_MODELS[type];
   const model = models.find(m => m.id === modelId);
   const triggerContent = document.getElementById(`${type}-trigger-content`);
   if (!model) return;
@@ -1102,7 +1102,7 @@ function updateTriggerContent(type, modelId) {
 function getSelectedModel(type) {
   const nativeSelect = document.getElementById(`${type}-select`);
   const id = nativeSelect.value;
-  return SOFA_MODELS[type].find(m => m.id === id);
+  return PRODUCT_MODELS[type].find(m => m.id === id);
 }
 
 // ==========================================
@@ -1232,7 +1232,7 @@ function insertModule(type) {
 function renderModuleDOM(mod) {
   const viewport = document.getElementById('canvas-viewport');
   const div = document.createElement('div');
-  div.className = 'sofa-module';
+  div.className = 'product-module';
   div.id = `mod-${mod.uid}`;
 
   div.style.width = `${mod.width * SCALE}px`;
@@ -1763,7 +1763,7 @@ function renderTable() {
     // 彙整模式：依「型號 + 註記」聚合，相同型號但不同註記的品項分開計算
     const map = new Map();
     modules.forEach(mod => {
-      const key = mod.id + ' ' + (mod.note || '');
+      const key = mod.id + ' ' + (mod.note || '');
       if (map.has(key)) {
         map.get(key).qty++;
       } else {
@@ -1841,7 +1841,7 @@ function exportCSV() {
   if (isAggregated) {
     const map = new Map();
     modules.forEach(mod => {
-      const key = mod.id + ' ' + (mod.note || '');
+      const key = mod.id + ' ' + (mod.note || '');
       if (map.has(key)) {
         map.get(key).qty++;
       } else {
@@ -1877,7 +1877,7 @@ function saveProject() {
   const blob = new Blob([data], { type: 'application/json' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `LINE_Storage_Project_${Date.now()}.agora`;
+  link.download = `LINE_Storage_Project_${Date.now()}.line`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
