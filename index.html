@@ -11,6 +11,16 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
 
 .app { display: flex; height: 100vh; border: 2px solid #888; overflow: hidden; }
 
+/* ── 任務一：響應式基礎斷點 ── */
+@media (max-width: 900px) {
+  .app {
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+}
+
 .panel {
   width: 250px; min-width: 250px;
   background: #f7f5f2;
@@ -189,6 +199,32 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
   touch-action: none; /* 阻止瀏覽器原生縮放/捲動，讓自訂手勢完整接管 */
 }
 
+/* ── 任務三：畫布區高度自適應 ── */
+@media (max-width: 900px) {
+  .canvas-area {
+    /* 小螢幕下 canvas-area 不再靠 flex:1 撐高，改自訂高度 */
+    flex: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .canvas-header {
+    /* 允許按鈕群自動換行，避免擠成一排 */
+    flex-wrap: wrap;
+    gap: 6px;
+    /* 小螢幕左側留空間給漢堡按鈕（寬約 110px + 10px margin） */
+    padding-left: 125px;
+  }
+  .canvas {
+    /* 固定畫布高度，剩餘空間留給清單 */
+    height: 50dvh;
+    flex: none;
+  }
+  /* 標題文字隱藏，將空間讓給按鈕群 */
+  .canvas-title {
+    display: none;
+  }
+}
+
 /* 多選模式啟用時按鈕高亮 */
 .btn.multiselect-active {
   border-color: #e67e22 !important;
@@ -222,6 +258,22 @@ col.col-spec   { width: 14%; }
 col.col-qty    { width: 7%; }
 col.col-acrylic { width: 10%; }
 col.col-note   { width: 23%; }
+
+/* ── 任務四：配置清單自適應 ── */
+@media (max-width: 900px) {
+  .list-area {
+    min-height: unset;
+    max-height: 35dvh;
+    overflow-y: auto;
+  }
+  /* table 外層容器允許橫向捲動 */
+  .list-area > table {
+    min-width: 540px; /* 確保欄位不過度壓縮 */
+  }
+  .list-area {
+    overflow-x: auto;
+  }
+}
 
 th {
   background: #eeebe6;
@@ -341,12 +393,151 @@ tr.acrylic-summary-row td {
   pointer-events: none;
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── 任務二：Panel 收合抽屜化 ── */
+/* 漢堡按鈕：僅小螢幕顯示 */
+#panel-toggle {
+  display: none;
+}
+@media (max-width: 900px) {
+  #panel-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 300;
+    padding: 7px 12px;
+    background: #f7f5f2;
+    border: 1.5px solid #888;
+    border-radius: 5px;
+    font-size: 13px;
+    font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  /* 小螢幕下 panel 改為固定抽屜，預設收合 */
+  .panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    max-width: 85vw;
+    height: 100dvh;
+    z-index: 250;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 16px rgba(0,0,0,0.18);
+    border-right: 2px solid #888;
+    /* padding-top 留給關閉按鈕空間 */
+    padding-top: 52px;
+  }
+  /* panel 展開時 */
+  .panel.panel-open {
+    transform: translateX(0);
+  }
+  /* panel 內的關閉按鈕 */
+  #panel-close {
+    display: flex;
+  }
+}
+/* 關閉按鈕預設隱藏（桌機不需要） */
+#panel-close {
+  display: none;
+  align-items: center;
+  justify-content: flex-end;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  border: 1.5px solid #888;
+  border-radius: 5px;
+  background: #fff;
+  font-size: 12px;
+  font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+  cursor: pointer;
+}
+/* 遮罩層 */
+#panel-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 200;
+}
+#panel-overlay.overlay-show {
+  display: block;
+}
+
+/* ── 任務五：細節調整 ── */
+@media (max-width: 900px) {
+
+  /* 1. 全域字體與按鈕縮小 */
+  body {
+    font-size: 13px;
+  }
+  .btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .panel-title {
+    font-size: 14px;
+  }
+  .section-title {
+    font-size: 10px;
+  }
+  .hint {
+    font-size: 10px;
+  }
+
+  /* 2. custom-select 下拉選單：限制高度避免超出視窗 */
+  .custom-select-options {
+    max-height: 45dvh;
+    /* panel 在抽屜中 z-index 250，下拉需高於 panel */
+    z-index: 300;
+  }
+
+  /* 3. toast 底部上移，避免被手機底部手勢條遮擋 */
+  .toast {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* 4. list-header 按鈕縮小 */
+  .list-header .btn {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+
+  /* 5. 配置清單 table 字體縮小 */
+  table {
+    font-size: 11px;
+  }
+  th {
+    padding: 5px 6px;
+  }
+  td {
+    padding: 4px 6px;
+  }
+  .note-cell textarea {
+    font-size: 11px;
+    min-height: 26px;
+  }
+}
 </style>
 </head>
 <body>
 
+<!-- 遮罩層（小螢幕 panel 展開時顯示） -->
+<div id="panel-overlay" onclick="closePanelDrawer()"></div>
+
+<!-- 漢堡按鈕（小螢幕專用） -->
+<button id="panel-toggle" onclick="openPanelDrawer()">☰ 模塊選單</button>
+
 <div class="app">
-  <div class="panel">
+  <div class="panel" id="panel">
+    <!-- 關閉按鈕（小螢幕 panel 內顯示） -->
+    <button id="panel-close" onclick="closePanelDrawer()">✕ 關閉</button>
     <div class="panel-title">LINE牆櫃模塊工具</div>
 
     <div class="section">
@@ -439,7 +630,7 @@ tr.acrylic-summary-row td {
   <div class="canvas-area">
     <div class="canvas-header">
       <div style="display:flex; align-items:center; gap:10px;">
-        <span>LINE牆櫃 立面配置區</span>
+        <span class="canvas-title">LINE牆櫃 立面配置區</span>
         <button class="btn" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-color: #3a8a3a; color: #3a8a3a;" onclick="saveProject()" title="將目前配置儲存為 .line 專案檔">💾 儲存專案</button>
         <label class="btn" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-color: #3a8a3a; color: #3a8a3a; cursor: pointer; margin: 0;" title="載入先前儲存的 .line 專案檔">📂 載入專案<input type="file" id="loadProjectInput" accept=".line" style="display:none;" onchange="loadProject(event)"></label>
       </div>
@@ -1926,20 +2117,25 @@ function renderTable() {
 
       // 建立各欄 td
       const tdName = document.createElement('td');
+      tdName.dataset.label = '模塊名稱';
       tdName.textContent = mod.name;
 
       const tdId = document.createElement('td');
+      tdId.dataset.label = '型號';
       tdId.textContent = mod.id;
 
       const tdSpec = document.createElement('td');
+      tdSpec.dataset.label = '規格 (mm)';
       tdSpec.textContent = mod.spec;
 
       const tdQty = document.createElement('td');
+      tdQty.dataset.label = '數量';
       tdQty.style.textAlign = 'center';
       tdQty.textContent = '1';
 
       // 加購壓克力片欄（僅 BL-L4B/BL-L2U/BL-L2B 可加選）
       const tdAcrylic = document.createElement('td');
+      tdAcrylic.dataset.label = '加購壓克力片';
       tdAcrylic.style.textAlign = 'center';
       const acrylicMax = ACRYLIC_QTY_MAP[mod.id] || 0;
       if (acrylicMax === 0) {
@@ -1970,6 +2166,7 @@ function renderTable() {
       }
 
       const tdNote = document.createElement('td');
+      tdNote.dataset.label = '註記';
       tdNote.className = 'note-cell';
       const textarea = document.createElement('textarea');
       textarea.rows = 1;
@@ -2439,6 +2636,21 @@ function toggleMultiSelectMode() {
     selectedUid = null;
     showToast('多選模式已關閉');
   }
+}
+
+// ==========================================
+// 任務二：Panel 抽屜開關（小螢幕專用）
+// ==========================================
+function openPanelDrawer() {
+  document.getElementById('panel').classList.add('panel-open');
+  document.getElementById('panel-overlay').classList.add('overlay-show');
+  document.body.style.overflow = 'hidden'; // 防止背景捲動
+}
+
+function closePanelDrawer() {
+  document.getElementById('panel').classList.remove('panel-open');
+  document.getElementById('panel-overlay').classList.remove('overlay-show');
+  document.body.style.overflow = '';
 }
 
 // ==========================================
