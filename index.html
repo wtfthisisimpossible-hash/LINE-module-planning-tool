@@ -41,6 +41,69 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
 }
 .section { display: flex; flex-direction: column; gap: 6px; }
 
+/* ── 插入模塊收合群組 ── */
+.insert-group {
+  display: flex; flex-direction: column; gap: 0;
+  border: 1.5px solid #c8c3bc;
+  border-radius: 7px;
+  overflow: visible;
+  background: #fff;
+}
+.insert-group-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px;
+  background: #edeae5;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px; font-weight: bold; color: #333;
+  border-bottom: 1.5px solid #c8c3bc;
+  border-radius: 5px 5px 0 0;
+  transition: background 0.15s;
+}
+.insert-group-header:hover { background: #e4e0da; }
+.insert-group-header .ig-arrow {
+  font-size: 10px; color: #666;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.insert-group.open .insert-group-header .ig-arrow { transform: rotate(180deg); }
+.insert-group-body {
+  display: none;
+  flex-direction: column;
+  gap: 0;
+}
+.insert-group.open .insert-group-body { display: flex; }
+.insert-tab-bar {
+  display: flex;
+  border-bottom: 1.5px solid #c8c3bc;
+  background: #f5f3f0;
+}
+.insert-tab {
+  flex: 1;
+  padding: 6px 2px;
+  text-align: center;
+  font-size: 11px; font-weight: bold; color: #666;
+  cursor: pointer;
+  border-right: 1px solid #c8c3bc;
+  transition: background 0.1s, color 0.1s;
+  user-select: none;
+  white-space: nowrap;
+}
+.insert-tab:last-child { border-right: none; }
+.insert-tab:hover { background: #ece8e2; color: #333; }
+.insert-tab.active {
+  background: #fff; color: #1a1a1a;
+  border-bottom: 2px solid #1a1a1a;
+  margin-bottom: -1.5px;
+}
+.insert-panel {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+}
+.insert-panel.active { display: flex; }
+
 /* 客製化下拉選單樣式 */
 .custom-select {
   position: relative;
@@ -70,17 +133,14 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
   transform: rotate(180deg);
 }
 .custom-select-options {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
+  position: fixed;
   background: #fff;
   border: 1.5px solid #888;
   border-radius: 5px;
   margin-top: 4px;
   max-height: 260px;
   overflow-y: auto;
-  z-index: 100;
+  z-index: 9999;
   display: none;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
@@ -540,66 +600,77 @@ tr.acrylic-summary-row td {
     <button id="panel-close" onclick="closePanelDrawer()">✕ 關閉</button>
     <div class="panel-title">LINE牆櫃模塊工具</div>
 
-    <div class="section">
-      <div class="section-title">三層櫃模塊</div>
-      <div class="custom-select" id="three_tier-custom-select">
-        <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('three_tier')">
-          <div class="trigger-content" id="three_tier-trigger-content">
-            <span>選擇三層櫃模塊</span>
-          </div>
-        </div>
-        <div class="custom-select-options" id="three_tier-options-list"></div>
+    <!-- ── 插入模塊收合群組 ── -->
+    <div class="insert-group open" id="insert-group">
+      <div class="insert-group-header" onclick="toggleInsertGroup()">
+        <span>➕ 插入模塊</span>
+        <span class="ig-arrow">▼</span>
       </div>
-      <select id="three_tier-select" style="display: none;"></select>
-      <button class="btn" onclick="insertModule('three_tier')">插入三層櫃模塊</button>
-    </div>
-
-    <hr class="divider">
-
-    <div class="section">
-      <div class="section-title">雙層櫃模塊</div>
-      <div class="custom-select" id="two_tier-custom-select">
-        <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('two_tier')">
-          <div class="trigger-content" id="two_tier-trigger-content">
-            <span>選擇雙層櫃模塊</span>
-          </div>
+      <div class="insert-group-body">
+        <!-- 分頁標籤 -->
+        <div class="insert-tab-bar">
+          <div class="insert-tab active" id="itab-three_tier" onclick="switchInsertTab('three_tier')">三層櫃</div>
+          <div class="insert-tab" id="itab-two_tier" onclick="switchInsertTab('two_tier')">雙層櫃</div>
+          <div class="insert-tab" id="itab-locker" onclick="switchInsertTab('locker')">置物櫃</div>
+          <div class="insert-tab" id="itab-other" onclick="switchInsertTab('other')">其他</div>
         </div>
-        <div class="custom-select-options" id="two_tier-options-list"></div>
-      </div>
-      <select id="two_tier-select" style="display: none;"></select>
-      <button class="btn" onclick="insertModule('two_tier')">插入雙層櫃模塊</button>
-    </div>
 
-    <hr class="divider">
-
-    <div class="section">
-      <div class="section-title">置物櫃模塊</div>
-      <div class="custom-select" id="locker-custom-select">
-        <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('locker')">
-          <div class="trigger-content" id="locker-trigger-content">
-            <span>選擇置物櫃模塊</span>
+        <!-- 三層櫃 -->
+        <div class="insert-panel active" id="ipanel-three_tier">
+          <div class="custom-select" id="three_tier-custom-select">
+            <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('three_tier')">
+              <div class="trigger-content" id="three_tier-trigger-content">
+                <span>選擇三層櫃模塊</span>
+              </div>
+            </div>
+            <div class="custom-select-options" id="three_tier-options-list"></div>
           </div>
+          <select id="three_tier-select" style="display: none;"></select>
+          <button class="btn" onclick="insertModule('three_tier')">插入三層櫃模塊</button>
         </div>
-        <div class="custom-select-options" id="locker-options-list"></div>
-      </div>
-      <select id="locker-select" style="display: none;"></select>
-      <button class="btn" onclick="insertModule('locker')">插入置物櫃模塊</button>
-    </div>
 
-    <hr class="divider">
-
-    <div class="section">
-      <div class="section-title">其他配件</div>
-      <div class="custom-select" id="other-custom-select">
-        <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('other')">
-          <div class="trigger-content" id="other-trigger-content">
-            <span>選擇其他配件</span>
+        <!-- 雙層櫃 -->
+        <div class="insert-panel" id="ipanel-two_tier">
+          <div class="custom-select" id="two_tier-custom-select">
+            <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('two_tier')">
+              <div class="trigger-content" id="two_tier-trigger-content">
+                <span>選擇雙層櫃模塊</span>
+              </div>
+            </div>
+            <div class="custom-select-options" id="two_tier-options-list"></div>
           </div>
+          <select id="two_tier-select" style="display: none;"></select>
+          <button class="btn" onclick="insertModule('two_tier')">插入雙層櫃模塊</button>
         </div>
-        <div class="custom-select-options" id="other-options-list"></div>
+
+        <!-- 置物櫃 -->
+        <div class="insert-panel" id="ipanel-locker">
+          <div class="custom-select" id="locker-custom-select">
+            <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('locker')">
+              <div class="trigger-content" id="locker-trigger-content">
+                <span>選擇置物櫃模塊</span>
+              </div>
+            </div>
+            <div class="custom-select-options" id="locker-options-list"></div>
+          </div>
+          <select id="locker-select" style="display: none;"></select>
+          <button class="btn" onclick="insertModule('locker')">插入置物櫃模塊</button>
+        </div>
+
+        <!-- 其他配件 -->
+        <div class="insert-panel" id="ipanel-other">
+          <div class="custom-select" id="other-custom-select">
+            <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleSelect('other')">
+              <div class="trigger-content" id="other-trigger-content">
+                <span>選擇其他配件</span>
+              </div>
+            </div>
+            <div class="custom-select-options" id="other-options-list"></div>
+          </div>
+          <select id="other-select" style="display: none;"></select>
+          <button class="btn" onclick="insertModule('other')">插入其他配件</button>
+        </div>
       </div>
-      <select id="other-select" style="display: none;"></select>
-      <button class="btn" onclick="insertModule('other')">插入其他配件</button>
     </div>
 
     <hr class="divider">
@@ -857,6 +928,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initSelectData('two_tier');
   initSelectData('locker');
   initSelectData('other');
+  setZoom(1.5);
   
   document.addEventListener('click', () => {
     closeAllSelects();
@@ -922,7 +994,7 @@ function updateCanvasTransform() {
 function resetView() {
   panX = 0;
   panY = 0;
-  setZoom(1);
+  setZoom(1.5);
 }
 
 // 模塊置中：僅平移「視圖」（背景網格 + 模塊視口）本身，
@@ -1336,12 +1408,28 @@ function initSelectData(type) {
   });
 }
 
+function toggleInsertGroup() {
+  document.getElementById('insert-group').classList.toggle('open');
+}
+function switchInsertTab(tab) {
+  ['three_tier','two_tier','locker','other'].forEach(t => {
+    document.getElementById('itab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('ipanel-' + t).classList.toggle('active', t === tab);
+  });
+}
+
 function toggleSelect(type) {
   const target = document.getElementById(`${type}-custom-select`);
   const isOpen = target.classList.contains('open');
   closeAllSelects();
   if (!isOpen) {
     target.classList.add('open');
+    const trigger = target.querySelector('.custom-select-trigger');
+    const options = target.querySelector('.custom-select-options');
+    const rect = trigger.getBoundingClientRect();
+    options.style.left  = rect.left + 'px';
+    options.style.top   = (rect.bottom + 4) + 'px';
+    options.style.width = rect.width + 'px';
   }
 }
 
