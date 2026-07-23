@@ -2649,46 +2649,60 @@ function duplicateSelected() {
     if (mod.y + hPx > maxY) maxY = mod.y + hPx;
   });
 
-  // 找空白位置的螺旋掃描函數（與 insertModule 邏輯一致）
-  function findEmptyPosition(wPx, hPx, excludeUids) {
-    function overlaps(tx, ty) {
-      return modules.some(m => {
-        if (excludeUids && excludeUids.has(m.uid)) return false;
-        const mw = m.width * SCALE, mh = m.height * SCALE;
-        return tx < m.x + mw && tx + wPx > m.x && ty < m.y + mh && ty + hPx > m.y;
+  // 群組 bounding box（邏輯像素）
+  const groupW = maxX - minX;
+  const groupH = maxY - minY;
+
+  // 以整個群組 bbox 為單位，螺旋掃描找空白錨點（bbox 左上角）
+  function findGroupAnchor(gW, gH) {
+    // 用現有所有模塊（含被選取的原模塊）的整體 bbox 做外框
+    let allMinX = Infinity, allMinY = Infinity, allMaxX = -Infinity, allMaxY = -Infinity;
+    modules.forEach(m => {
+      const mw = m.width * SCALE, mh = m.height * SCALE;
+      allMinX = Math.min(allMinX, m.x); allMinY = Math.min(allMinY, m.y);
+      allMaxX = Math.max(allMaxX, m.x + mw); allMaxY = Math.max(allMaxY, m.y + mh);
+    });
+    const allCX = (allMinX + allMaxX) / 2;
+    const allCY = (allMinY + allMaxY) / 2;
+
+    // 檢查群組（以左上角 ax,ay 放置）是否與任何現有模塊重疊
+    function groupOverlaps(ax, ay) {
+      return targets.some(src => {
+        // 各成員在新位置的實際座標
+        const nx = ax + (src.x - minX);
+        const ny = ay + (src.y - minY);
+        const nw = src.width * SCALE;
+        const nh = src.height * SCALE;
+        return modules.some(m => {
+          const mw = m.width * SCALE, mh = m.height * SCALE;
+          return nx < m.x + mw && nx + nw > m.x && ny < m.y + mh && ny + nh > m.y;
+        });
       });
     }
 
     const GAP = 10;
     const STEP = GAP;
-
-    let gMinX = Infinity, gMinY = Infinity, gMaxX = -Infinity, gMaxY = -Infinity;
-    modules.forEach(m => {
-      const mw = m.width * SCALE, mh = m.height * SCALE;
-      gMinX = Math.min(gMinX, m.x); gMinY = Math.min(gMinY, m.y);
-      gMaxX = Math.max(gMaxX, m.x + mw); gMaxY = Math.max(gMaxY, m.y + mh);
-    });
-    const groupCX = (gMinX + gMaxX) / 2;
-    const groupCY = (gMinY + gMaxY) / 2;
-
     let bestX = null, bestY = null, bestDist = Infinity;
-    for (let layer = 1; layer <= 200 && bestX === null; layer++) {
-      const outerL = gMinX - layer * STEP - wPx - GAP;
-      const outerR = gMaxX + layer * STEP + GAP;
-      const outerT = gMinY - layer * STEP - hPx - GAP;
-      const outerB = gMaxY + layer * STEP + GAP;
+
+    for (let layer = 1; layer <= 300 && bestX === null; layer++) {
+      const outerL = allMinX - layer * STEP - gW - GAP;
+      const outerR = allMaxX + layer * STEP + GAP;
+      const outerT = allMinY - layer * STEP - gH - GAP;
+      const outerB = allMaxY + layer * STEP + GAP;
       const candidates = [];
-      for (let y = outerT; y <= outerB + hPx; y += STEP) { candidates.push({ x: outerR, y }); candidates.push({ x: outerL, y }); }
-      for (let x = outerL; x <= outerR + wPx; x += STEP) { candidates.push({ x, y: outerB }); candidates.push({ x, y: outerT }); }
+      for (let y = outerT; y <= outerB + gH; y += STEP) { candidates.push({ x: outerR, y }); candidates.push({ x: outerL, y }); }
+      for (let x = outerL; x <= outerR + gW; x += STEP) { candidates.push({ x, y: outerB }); candidates.push({ x, y: outerT }); }
       candidates.forEach(({ x, y }) => {
-        if (overlaps(x, y)) return;
-        const cx = x + wPx / 2, cy = y + hPx / 2;
-        const dist = (cx - groupCX) ** 2 + (cy - groupCY) ** 2;
+        if (groupOverlaps(x, y)) return;
+        const cx = x + gW / 2, cy = y + gH / 2;
+        const dist = (cx - allCX) ** 2 + (cy - allCY) ** 2;
         if (dist < bestDist) { bestDist = dist; bestX = x; bestY = y; }
       });
     }
-    return bestX !== null ? { x: bestX, y: bestY } : { x: gMaxX + GAP, y: groupCY - hPx / 2 };
+    return bestX !== null ? { x: bestX, y: bestY } : { x: allMaxX + GAP, y: allCY - gH / 2 };
   }
+
+  const anchor = findGroupAnchor(groupW, groupH);
 
   // 先清除目前選取狀態
   if (selectedUid !== null) {
@@ -2706,13 +2720,10 @@ function duplicateSelected() {
   });
   selectedUids.clear();
 
-  // 建立副本：對每個複製模塊用螺旋掃描找空白位置
+  // 建立副本：以群組錨點 + 各模塊相對偏移還原相對位置
   const newUids = [];
   const baseTime = Date.now();
   targets.forEach((mod, i) => {
-    const wPx = mod.width * SCALE;
-    const hPx = mod.height * SCALE;
-    const pos = findEmptyPosition(wPx, hPx, null);
     const newUid = baseTime + i * 7 + Math.floor(Math.random() * 100);
     const copy = {
       uid:       newUid,
@@ -2721,8 +2732,8 @@ function duplicateSelected() {
       width:     mod.width,
       height:    mod.height,
       spec:      mod.spec,
-      x:          pos.x,
-      y:          pos.y,
+      x:          anchor.x + (mod.x - minX),
+      y:          anchor.y + (mod.y - minY),
       rotate:     mod.rotate || 0,
       note:       mod.note,
       acrylicQty: 0,
