@@ -5,11 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LINE牆櫃立面配置工具</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+:root {
+  --bg:           #F2F0EE;
+  --surface:      #FFFFFF;
+  --surface-2:    #F7F6F4;
+  --border:       #E4E1DC;
+  --border-strong:#C9C5BE;
+  --accent:       #D4613A;
+  --accent-hover: #BF5330;
+  --accent-light: #FAF0EC;
+  --text-primary: #1C1A18;
+  --text-secondary:#6B6860;
+  --text-muted:   #A09D99;
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --radius-sm:    8px;
+  --radius-md:    12px;
+  --radius-lg:    16px;
+}
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 14px; color: #1a1a1a; background: #f0ede8; }
+body { font-family: "Inter", "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 14px; color: var(--text-primary); background: var(--bg); }
 
-.app { display: flex; height: 100vh; border: 2px solid #888; overflow: hidden; }
+.app { display: flex; height: 100vh; border: none; overflow: hidden; gap: 12px; padding: 12px; background: var(--bg); }
 
 /* ── 任務一：響應式基礎斷點 ── */
 @media (max-width: 900px) {
@@ -22,47 +41,51 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
 }
 
 .panel {
-  width: 250px; min-width: 250px;
-  background: #f7f5f2;
-  border-right: 2px solid #888;
-  padding: 14px 12px;
+  width: 258px; min-width: 258px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 14px;
   display: flex; flex-direction: column; gap: 14px;
   overflow-y: auto;
+  box-shadow: var(--shadow-sm);
 }
 .panel-title {
-  font-size: 15px; font-weight: bold;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #888;
+  font-size: 15px; font-weight: 700; letter-spacing: -0.01em;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid var(--border);
+  color: var(--text-primary);
 }
 .section-title {
-  font-size: 11px; font-weight: bold;
-  color: #555; letter-spacing: 0.03em;
-  margin-bottom: 5px;
+  font-size: 10.5px; font-weight: 600;
+  color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase;
+  margin-bottom: 6px;
 }
 .section { display: flex; flex-direction: column; gap: 6px; }
 
 /* ── 插入模塊收合群組 ── */
 .insert-group {
   display: flex; flex-direction: column; gap: 0;
-  border: 1.5px solid #c8c3bc;
-  border-radius: 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   overflow: visible;
-  background: #fff;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 .insert-group-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 10px;
-  background: #edeae5;
+  padding: 9px 12px;
+  background: var(--surface-2);
   cursor: pointer;
   user-select: none;
-  font-size: 13px; font-weight: bold; color: #333;
-  border-bottom: 1.5px solid #c8c3bc;
-  border-radius: 5px 5px 0 0;
+  font-size: 12.5px; font-weight: 600; color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
   transition: background 0.15s;
 }
-.insert-group-header:hover { background: #e4e0da; }
+.insert-group-header:hover { background: var(--bg); }
 .insert-group-header .ig-arrow {
-  font-size: 10px; color: #666;
+  font-size: 10px; color: var(--text-muted);
   transition: transform 0.2s;
   display: inline-block;
 }
@@ -75,26 +98,27 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
 .insert-group.open .insert-group-body { display: flex; }
 .insert-tab-bar {
   display: flex;
-  border-bottom: 1.5px solid #c8c3bc;
-  background: #f5f3f0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
 }
 .insert-tab {
   flex: 1;
-  padding: 6px 2px;
+  padding: 7px 2px;
   text-align: center;
-  font-size: 11px; font-weight: bold; color: #666;
+  font-size: 11px; font-weight: 600; color: var(--text-secondary);
   cursor: pointer;
-  border-right: 1px solid #c8c3bc;
+  border-right: 1px solid var(--border);
   transition: background 0.1s, color 0.1s;
   user-select: none;
   white-space: nowrap;
 }
 .insert-tab:last-child { border-right: none; }
-.insert-tab:hover { background: #ece8e2; color: #333; }
+.insert-tab:hover { background: var(--accent-light); color: var(--accent); }
 .insert-tab.active {
-  background: #fff; color: #1a1a1a;
-  border-bottom: 2px solid #1a1a1a;
-  margin-bottom: -1.5px;
+  background: var(--surface); color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+  margin-bottom: -1px;
+  font-weight: 700;
 }
 .insert-panel {
   display: none;
@@ -111,22 +135,25 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
 }
 .custom-select-trigger {
   width: 100%;
-  padding: 6px 10px;
-  border: 1.5px solid #888;
-  border-radius: 5px;
-  background: #fff;
-  color: #1a1a1a;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
   font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
   user-select: none;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s;
 }
+.custom-select-trigger:hover { border-color: var(--accent); }
 .custom-select-trigger::after {
   content: '▼';
   font-size: 9px;
-  color: #666;
+  color: var(--text-secondary);
   transition: transform 0.15s ease;
 }
 .custom-select.open .custom-select-trigger::after {
@@ -134,15 +161,15 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
 }
 .custom-select-options {
   position: fixed;
-  background: #fff;
-  border: 1.5px solid #888;
-  border-radius: 5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   margin-top: 4px;
   max-height: 260px;
   overflow-y: auto;
   z-index: 9999;
   display: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-md);
 }
 .custom-select.open .custom-select-options {
   display: block;
@@ -156,11 +183,12 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
   transition: background 0.1s ease;
 }
 .custom-option:hover {
-  background: #eef5fc;
+  background: var(--accent-light);
 }
 .custom-option.selected {
-  background: #e1f0fe;
-  font-weight: bold;
+  background: var(--accent-light);
+  font-weight: 600;
+  color: var(--accent);
 }
 .custom-option-icon {
   width: 36px;
@@ -181,7 +209,7 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
 }
 .custom-option-name {
   font-size: 12px;
-  color: #1a1a1a;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -209,77 +237,82 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
 }
 
 .btn {
-  padding: 7px 12px;
-  border: 1.5px solid #888;
-  border-radius: 5px;
-  background: #fff;
-  color: #1a1a1a;
-  font-size: 13px;
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 13px; font-weight: 500;
   cursor: pointer;
   text-align: center;
   transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+  font-family: inherit;
 }
-.btn:hover { background: #eef5fc; border-color: #1a6fc4; color: #1a6fc4; }
+.btn:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
 .btn:active { transform: scale(0.97); }
 .btn-row { display: flex; gap: 6px; }
 .btn-row .btn { flex: 1; }
 .btn-danger:hover { border-color: #c0392b; background: #fdf0ee; color: #c0392b; }
+.btn-primary {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
 
-.divider { border: none; border-top: 1.5px solid #bbb; }
-.hint { font-size: 11px; color: #777; line-height: 1.5; }
+.divider { border: none; border-top: 1px solid var(--border); }
+.hint { font-size: 11px; color: var(--text-muted); line-height: 1.6; }
 
-.canvas-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.canvas-area { flex: 1; display: flex; flex-direction: column; min-width: 0; gap: 10px; }
 
 .canvas-header {
-  padding: 10px 14px;
-  font-size: 13px; font-weight: bold;
-  color: #444;
-  border-bottom: 2px solid #888;
-  background: #f7f5f2;
+  padding: 10px 16px;
+  font-size: 13px; font-weight: 600;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
 }
-
 
 /*畫布網格改變*/
 .canvas {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background-color: #fcfcfc;
+  background-color: var(--surface);
   background-image:
-    radial-gradient(circle, #a9a9a9 2px, transparent 2px),
-    radial-gradient(circle, #ccc 1.5px, transparent 1.5px);
+    radial-gradient(circle, #C8C4BF 1.8px, transparent 1.8px),
+    radial-gradient(circle, #E0DDD9 1.2px, transparent 1.2px);
   background-size:
     calc(100px * var(--zoom, 1)) calc(100px * var(--zoom, 1)),
     calc(20px  * var(--zoom, 1)) calc(20px  * var(--zoom, 1));
   background-position: 0 0, 0 0;
-  border-bottom: 2px solid #888;
-  touch-action: none; /* 阻止瀏覽器原生縮放/捲動，讓自訂手勢完整接管 */
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  touch-action: none;
 }
 
 /* ── 任務三：畫布區高度自適應 ── */
 @media (max-width: 900px) {
   .canvas-area {
-    /* 小螢幕下 canvas-area 不再靠 flex:1 撐高，改自訂高度 */
     flex: none;
     display: flex;
     flex-direction: column;
   }
   .canvas-header {
-    /* 允許按鈕群自動換行，避免擠成一排 */
     flex-wrap: wrap;
     gap: 6px;
-    /* 小螢幕左側留空間給漢堡按鈕（寬約 110px + 10px margin） */
     padding-left: 125px;
   }
   .canvas {
-    /* 固定畫布高度，剩餘空間留給清單 */
     height: 50dvh;
     flex: none;
   }
-  /* 標題文字隱藏，將空間讓給按鈕群 */
   .canvas-title {
     display: none;
   }
@@ -287,8 +320,9 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
 
 /* 多選模式啟用時按鈕高亮 */
 .btn.multiselect-active {
-  border-color: #e67e22 !important;
-  color: #e67e22 !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  background: var(--accent-light);
   background: #fff8f3;
 }
 
@@ -300,16 +334,37 @@ body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; font-size: 
   z-index: 1;
 }
 
-.list-area { background: #f7f5f2;min-height: 300px ;max-height: 400px; overflow-y: auto; }
+/* 清單外層包裝：header 固定，table 區域獨立捲動 */
+.list-area-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+  max-height: 400px;
+}
+.list-area {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--surface);
+}
 
 .list-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 7px 12px;
-  border-bottom: 1.5px solid #888;
-  background: #eeebe6;
-  position: sticky; top: 0; z-index: 2;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  flex-shrink: 0;
 }
-.list-header span { font-size: 12px; font-weight: bold; color: #444; }
+.list-header span { font-size: 12px; font-weight: 600; color: var(--text-primary); }
 
 table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
 col.col-name   { width: 15%; }
@@ -321,46 +376,44 @@ col.col-note   { width: 23%; }
 
 /* ── 任務四：配置清單自適應 ── */
 @media (max-width: 900px) {
-  .list-area {
+  .list-area-wrap {
     min-height: unset;
     max-height: 35dvh;
-    overflow-y: auto;
   }
-  /* table 外層容器允許橫向捲動 */
   .list-area > table {
-    min-width: 540px; /* 確保欄位不過度壓縮 */
-  }
-  .list-area {
-    overflow-x: auto;
+    min-width: 540px;
   }
 }
 
 th {
-  background: #eeebe6;
-  color: #555;
-  font-weight: bold;
-  padding: 6px 8px;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 7px 10px;
   text-align: left;
-  border-bottom: 1.5px solid #888;
+  border-bottom: 1px solid var(--border);
 }
 td {
-  padding: 5px 8px;
-  border-bottom: 1px solid #ddd;
-  color: #1a1a1a;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
   vertical-align: middle;
 }
-tr:hover td { background: #eef5fc; }
-td:not(:last-child), th:not(:last-child) { border-right: 1px solid #ddd; }
+tr:hover td { background: var(--accent-light); }
+td:not(:last-child), th:not(:last-child) { border-right: 1px solid var(--border); }
 
 .note-cell textarea {
   width: 100%; min-height: 30px;
-  border: 1px solid #ccc; border-radius: 3px;
-  background: #fff; color: #1a1a1a;
-  font-size: 12px; line-height: 1.4;
-  padding: 4px 6px; resize: vertical;
-  outline: none;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface); color: var(--text-primary);
+  font-size: 12px; line-height: 1.4; font-family: inherit;
+  padding: 4px 8px; resize: vertical;
+  outline: none; transition: border-color 0.15s;
 }
-.note-cell textarea:focus { border-color: #1a6fc4; box-shadow: 0 0 0 2px #cde4f7; }
+.note-cell textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(212,97,58,0.15); }
 
 
 /* 模塊元件 */
@@ -379,20 +432,23 @@ td:not(:last-child), th:not(:last-child) { border-right: 1px solid #ddd; }
   user-select: none;
   object-fit: fill;
 }
-.product-module.selected {
-  outline: 2.5px solid #1a6fc4;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 1px #fff, 0 4px 12px rgba(26,111,196,0.35);
-  border-radius: 3px;
-  z-index: 5;
+.product-module.selected::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 2.5px solid var(--accent);
+  border-radius: 4px;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px #fff, 0 4px 10px rgba(212,97,58,0.3);
+  z-index: 10;
 }
 .product-module:active { cursor: grabbing; }
 
 /* 框選矩形樣式 */
 #selection-rect {
   position: absolute;
-  border: 2px dashed #1a6fc4;
-  background: rgba(26, 111, 196, 0.08);
+  border: 2px dashed var(--accent);
+  background: rgba(212, 97, 58, 0.08);
   pointer-events: none;
   display: none;
   z-index: 50;
@@ -421,20 +477,19 @@ td:not(:last-child), th:not(:last-child) { border-right: 1px solid #ddd; }
 
 /* 配置清單多選高亮行 */
 tr.multi-selected-row td {
-  background: #fff3e0 !important;
+  background: var(--accent-light) !important;
 }
 
 /* 加購壓克力片 checkbox */
 .acrylic-cb {
   width: 18px; height: 18px;
   cursor: pointer;
-  accent-color: #8e44ad;
+  accent-color: var(--accent);
   vertical-align: middle;
 }
-/* 加購壓克力片高亮邊框已停用（改用 SVG 圖示置換） */
 /* 配置清單壓克力加購彙整列背景 */
 tr.acrylic-summary-row td {
-  background: #f5eefa !important;
+  background: var(--accent-light) !important;
 }
 
 /* 吐司通知樣式 */
@@ -453,9 +508,11 @@ tr.acrylic-summary-row td {
   pointer-events: none;
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
+@media (max-width: 900px) {
+  .toast { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+}
 
 /* ── 任務二：Panel 收合抽屜化 ── */
-/* 漢堡按鈕：僅小螢幕顯示 */
 #panel-toggle {
   display: none;
 }
@@ -469,15 +526,14 @@ tr.acrylic-summary-row td {
     left: 10px;
     z-index: 300;
     padding: 7px 12px;
-    background: #f7f5f2;
-    border: 1.5px solid #888;
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
     border-radius: 5px;
     font-size: 13px;
-    font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+    font-family: "Inter", "Microsoft JhengHei", "PingFang TC", sans-serif;
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   }
-  /* 小螢幕下 panel 改為固定抽屜，預設收合 */
   .panel {
     position: fixed;
     top: 0;
@@ -489,20 +545,16 @@ tr.acrylic-summary-row td {
     transform: translateX(-100%);
     transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 4px 0 16px rgba(0,0,0,0.18);
-    border-right: 2px solid #888;
-    /* padding-top 留給關閉按鈕空間 */
+    border-right: 1px solid var(--border);
     padding-top: 52px;
   }
-  /* panel 展開時 */
   .panel.panel-open {
     transform: translateX(0);
   }
-  /* panel 內的關閉按鈕 */
   #panel-close {
     display: flex;
   }
 }
-/* 關閉按鈕預設隱藏（桌機不需要） */
 #panel-close {
   display: none;
   align-items: center;
@@ -511,14 +563,13 @@ tr.acrylic-summary-row td {
   top: 10px;
   right: 10px;
   padding: 4px 10px;
-  border: 1.5px solid #888;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
-  background: #fff;
+  background: var(--surface);
   font-size: 12px;
-  font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+  font-family: "Inter", "Microsoft JhengHei", "PingFang TC", sans-serif;
   cursor: pointer;
 }
-/* 遮罩層 */
 #panel-overlay {
   display: none;
   position: fixed;
@@ -532,57 +583,17 @@ tr.acrylic-summary-row td {
 
 /* ── 任務五：細節調整 ── */
 @media (max-width: 900px) {
-
-  /* 1. 全域字體與按鈕縮小 */
-  body {
-    font-size: 13px;
-  }
-  .btn {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
-  .panel-title {
-    font-size: 14px;
-  }
-  .section-title {
-    font-size: 10px;
-  }
-  .hint {
-    font-size: 10px;
-  }
-
-  /* 2. custom-select 下拉選單：限制高度避免超出視窗 */
-  .custom-select-options {
-    max-height: 45dvh;
-    /* panel 在抽屜中 z-index 250，下拉需高於 panel */
-    z-index: 300;
-  }
-
-  /* 3. toast 底部上移，避免被手機底部手勢條遮擋 */
-  .toast {
-    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* 4. list-header 按鈕縮小 */
-  .list-header .btn {
-    padding: 3px 8px;
-    font-size: 11px;
-  }
-
-  /* 5. 配置清單 table 字體縮小 */
-  table {
-    font-size: 11px;
-  }
-  th {
-    padding: 5px 6px;
-  }
-  td {
-    padding: 4px 6px;
-  }
-  .note-cell textarea {
-    font-size: 11px;
-    min-height: 26px;
-  }
+  body { font-size: 13px; }
+  .btn { padding: 6px 10px; font-size: 12px; }
+  .panel-title { font-size: 14px; }
+  .section-title { font-size: 10px; }
+  .hint { font-size: 10px; }
+  .custom-select-options { max-height: 45dvh; z-index: 300; }
+  .list-header .btn { padding: 3px 8px; font-size: 11px; }
+  table { font-size: 11px; }
+  th { padding: 5px 6px; }
+  td { padding: 4px 6px; }
+  .note-cell textarea { font-size: 11px; min-height: 26px; }
 }
 </style>
 </head>
@@ -708,12 +719,12 @@ tr.acrylic-summary-row td {
       <div style="display:flex; align-items:center; gap:8px;">
         <div style="display:flex; align-items:center; gap:4px;">
           <button class="btn" style="padding:3px 9px; font-size:14px; font-weight:bold; line-height:1;" onclick="setZoom(canvasZoom - 0.1)" title="縮小">－</button>
-          <span id="zoom-label" style="font-size:12px; color:#555; min-width:38px; text-align:center; user-select:none;">100%</span>
+          <span id="zoom-label" style="font-size:12px; color:var(--text-secondary); min-width:38px; text-align:center; user-select:none;">100%</span>
           <button class="btn" style="padding:3px 9px; font-size:14px; font-weight:bold; line-height:1;" onclick="setZoom(canvasZoom + 0.1)" title="放大">＋</button>
           <button class="btn" style="padding:3px 9px; font-size:12px;" onclick="centerModulesGroup()" title="將所有模塊群組移動到畫布中心">模塊置中</button>
           <button class="btn" style="padding:3px 9px; font-size:12px;" onclick="resetView()" title="重置縮放與平移">重置</button>
         </div>
-        <button class="btn" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-color: #1a6fc4; color: #1a6fc4;" onclick="captureCanvas()">📷 擷取配置圖</button>
+        <button class="btn" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-color: var(--accent); color: var(--accent);" onclick="captureCanvas()">📷 擷取配置圖</button>
       </div>
     </div>
     
@@ -723,7 +734,7 @@ tr.acrylic-summary-row td {
       <div id="selection-rect"></div>
     </div>
 
-    <div class="list-area">
+    <div class="list-area-wrap">
       <div class="list-header">
         <span>配置清單</span>
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -731,6 +742,7 @@ tr.acrylic-summary-row td {
           <button class="btn" style="padding: 4px 12px; font-size: 12px;" onclick="exportCSV()">📁 匯出 CSV</button>
         </div>
       </div>
+      <div class="list-area">
       <table>
         <colgroup>
           <col class="col-name">
@@ -752,6 +764,7 @@ tr.acrylic-summary-row td {
         </thead>
         <tbody id="table-body"></tbody>
       </table>
+    </div>
     </div>
   </div>
 </div>
