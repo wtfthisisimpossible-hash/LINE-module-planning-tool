@@ -746,9 +746,12 @@ tr.acrylic-summary-row td {
     <hr class="divider">
 
     <div class="section">
-      <div class="section-title">複製選取模塊</div>
-      <button class="btn" onclick="duplicateSelected()" title="快捷鍵：Ctrl+D">⧉ 複製選取模塊</button>
-      <p class="hint">複製目前選取的模塊。快捷鍵：Ctrl+D</p>
+      <div class="section-title">複製 ／ 刪除選取模塊</div>
+      <div class="btn-row">
+        <button class="btn" onclick="duplicateSelected()" title="快捷鍵：Ctrl+D">⧉ 複製選取</button>
+        <button class="btn btn-danger" onclick="deleteSelected()">✕ 刪除選取</button>
+      </div>
+      <p class="hint">複製：含顏色、備註，貼至空白處（Ctrl+D）<br>刪除：移除目前選取的模塊（del/⌫）</p>
     </div>
 
     <hr class="divider">
@@ -762,7 +765,6 @@ tr.acrylic-summary-row td {
     <hr class="divider">
 
     <div class="section">
-      <button class="btn btn-danger" onclick="deleteSelected()">刪除選取模塊</button>
       <button class="btn btn-danger" onclick="clearCanvas()">清空配置</button>
     </div>
 
