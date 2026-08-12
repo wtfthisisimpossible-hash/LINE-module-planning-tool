@@ -2245,7 +2245,7 @@ function renderTable() {
       acrTr.innerHTML = `
         <td><strong>加購壓克力片</strong></td>
         <td style="color:#8e44ad;font-size:11px;">BL-1</td>
-        <td>58*93</td>
+        <td>91*58</td>
         <td style="text-align:center;font-weight:bold;color:#8e44ad;">${totalAcrylic}</td>
         <td style="text-align:center;">✓</td>
         <td class="note-cell"></td>
@@ -2407,7 +2407,7 @@ function buildAcrylicSubRow(uid, qty) {
 
   const tdSpec = document.createElement('td');
   tdSpec.style.cssText = 'color:#8e44ad; font-size:11px;';
-  tdSpec.textContent = '58*93';
+  tdSpec.textContent = '91*58';
 
   const tdQty = document.createElement('td');
   tdQty.style.cssText = 'text-align:center; color:#8e44ad; font-size:11px; font-weight:bold;';
@@ -2473,7 +2473,7 @@ function exportCSV() {
     // 壓克力片獨立品項
     const totalAcrylic = modules.reduce((sum, m) => sum + (m.acrylicQty || 0), 0);
     if (totalAcrylic > 0) {
-      rows.push(['加購壓克力片', 'BL-1', '58*93', totalAcrylic, '']);
+      rows.push(['加購壓克力片', 'BL-1', '91*58', totalAcrylic, '']);
     }
     // 連結片組裝費用（彙整模式）
     if (modules.some(m => m.id === 'BL-10' || m.id === 'BL-11')) {
@@ -2483,7 +2483,7 @@ function exportCSV() {
     modules.forEach(mod => {
       rows.push([mod.name, mod.id, mod.spec, 1, mod.note || '']);
       if ((mod.acrylicQty || 0) > 0) {
-        rows.push(['↳ 加購壓克力片', 'BL-1', '58*93', mod.acrylicQty, '']);
+        rows.push(['↳ 加購壓克力片', 'BL-1', '91*58', mod.acrylicQty, '']);
       }
     });
     // 連結片組裝費用（明細模式）
